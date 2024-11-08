@@ -17,7 +17,7 @@ public class basicAuton extends LinearOpMode {
     private ColorSensor colorLeft;
 
     // variables
-    double pow = -0.1;
+    double pow = -0.2;
     int targetRed = 2000;
     int targetBlue = 2000;
 
@@ -44,39 +44,30 @@ public class basicAuton extends LinearOpMode {
 
         telemetry.update();
 
-        targetBlue = colorLeft.blue() + 1000;
-        targetRed = colorLeft.red() + 500;
-
         waitForStart();
-        leftFront.setPower(pow);
-        leftBack.setPower(pow);
-        rightBack.setPower(pow);
-        rightFront.setPower(pow);
-        sleep(2500);
+
+        targetBlue = colorLeft.blue() + 1000;
+        targetRed = colorLeft.red() + 1000;
+
+        while (colorLeft.red() < targetRed && colorLeft.blue() < targetBlue){ //drive back till we see blue line then stop
+            leftFront.setPower(pow);
+            leftBack.setPower(pow);
+            rightBack.setPower(pow);
+            rightFront.setPower(pow);
+
+            telemetry.addData("colorLeft Red:", colorLeft.red());
+            telemetry.addData("colorLeft Blue:", colorLeft.blue());
+
+            telemetry.addData("target red", targetRed);
+            telemetry.addData("target blue", targetBlue);
+
+            telemetry.update();
+        }
+
         leftFront.setPower(0);
         leftBack.setPower(0);
         rightBack.setPower(0);
         rightFront.setPower(0);
 
-    /*
-    while (colorLeft.red() < targetRed && colorLeft.blue() < targetBlue){ //drive back till we see blue line then stop
-        leftFront.setPower(pow);
-        leftBack.setPower(pow);
-        rightBack.setPower(pow);
-        rightFront.setPower(pow);
-
-        telemetry.addData("colorLeft Red:", colorLeft.red());
-        telemetry.addData("colorLeft Blue:", colorLeft.blue());
-
-        telemetry.addData("target red", targetRed);
-        telemetry.addData("target blue", targetBlue);
-
-        telemetry.update();
-    }
-        leftFront.setPower(0);
-        leftBack.setPower(0);
-        rightBack.setPower(0);
-        rightFront.setPower(0);
- */
     }
 }

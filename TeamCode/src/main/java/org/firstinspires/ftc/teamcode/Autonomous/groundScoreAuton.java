@@ -17,10 +17,10 @@ public class groundScoreAuton extends LinearOpMode {
     private CRServo intake;
 
     // sensors
-    private ColorSensor colorLeft;
+    private ColorSensor colorRight;
 
     // variables
-    double pow = 0.15;
+    double pow = 0.2;
     int targetRed = 2000;
     int targetBlue = 2000;
 
@@ -38,40 +38,40 @@ public class groundScoreAuton extends LinearOpMode {
         rightFront.setDirection(DcMotor.Direction.REVERSE);
 
         // sensors
-        colorLeft = hardwareMap.get(ColorSensor.class, "colorLeft");
-
-        targetBlue = colorLeft.blue() + 750;
-        targetRed = colorLeft.red() + 500;
+        colorRight = hardwareMap.get(ColorSensor.class, "colorRight");
 
         waitForStart();
+
+        targetBlue = colorRight.blue() + 500;
+        targetRed = colorRight.red() + 500;
 
         colorDrive(-1);
 
         intake.setPower(1);
         sleep(2500);
         intake.setPower(0);
-
-        colorDrive(1);
     }
 
     public void colorDrive (int dir){
-        while (colorLeft.red() < targetRed && colorLeft.blue() < targetBlue){ //drive back till we see blue line then stop
+        while (colorRight.red() < targetRed && colorRight.blue() < targetBlue){ //drive back till we see blue line then stop
             leftFront.setPower(pow*dir);
             leftBack.setPower(pow*dir);
             rightBack.setPower(pow*dir);
             rightFront.setPower(pow*dir);
 
-            telemetry.addData("colorLeft Red:", colorLeft.red());
-            telemetry.addData("colorLeft Blue:", colorLeft.blue());
+            telemetry.addData("colorRight Red:", colorRight.red());
+            telemetry.addData("colorRight Blue:", colorRight.blue());
 
             telemetry.addData("target red", targetRed);
             telemetry.addData("target blue", targetBlue);
 
             telemetry.update();
         }
+
         leftFront.setPower(0);
         leftBack.setPower(0);
         rightBack.setPower(0);
         rightFront.setPower(0);
+
     }
 }
