@@ -30,12 +30,12 @@ public class earlySeasonObservationZone extends LinearOpMode {
 
     // variables
     double pow = 0.4;
-    double armPow = 0.5;
+    double armPow = 0.3;
     double specimenDistance = 16; //inches
     double armZone = 20;
     int targetBlue = 2000;
     int targetRed = 2000;
-    int specimenArm = -1300;
+    int specimenArm = -1000;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -97,17 +97,17 @@ public class earlySeasonObservationZone extends LinearOpMode {
 
         distanceDrive(1, specimenDistance); // drive to the submersible at hang distance
 
-        arm(specimenArm - 1250); //hook specimen on bar
+        arm(specimenArm - 1000); //hook specimen on bar
 
         sleep(500); //wait for arm momentum to stop
 
         intake(-1, 3000); // let go of specimen
 
-        arm(specimenArm - 1000); //bring arm up to not get stuck
+        arm(specimenArm - 750); //bring arm up to not get stuck
 
         distanceDrive(-1, armZone);// drive till against wall 30 inches sub 2 for buffer
 
-        turnC(1250); //turn so color sensors can see line
+        turnC(1000); //turn so color sensors can see line
 
         strafeRight(1500); // drive to wall
 
