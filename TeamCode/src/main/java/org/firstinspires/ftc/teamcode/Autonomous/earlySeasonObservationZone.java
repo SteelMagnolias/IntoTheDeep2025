@@ -30,8 +30,12 @@ public class earlySeasonObservationZone extends LinearOpMode {
 
     // variables
     double pow = 0.4;
-    double armPow = 0.7;
-    double specimenDistance = 6; //inches
+    double armPow = 0.5;
+    double specimenDistance = 16; //inches
+    double armZone = 20;
+    int targetBlue = 2000;
+    int targetRed = 2000;
+    int specimenArm = -1300;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -51,7 +55,7 @@ public class earlySeasonObservationZone extends LinearOpMode {
 
         //encoder setup
         armRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        armEncoder = armRight;
+        armEncoder = armLeft;
 
         // sensors
         distanceLeft = hardwareMap.get(DistanceSensor.class, "distanceLeft");
@@ -76,23 +80,38 @@ public class earlySeasonObservationZone extends LinearOpMode {
 
         telemetry.update();
 
+        intake.setPower(1); //hold specimen in
+
         waitForStart();
 
-        telemetry.addData("test", 0);
-        telemetry.update();
+        targetBlue = colorRight.blue() + 1000;
+        targetRed = colorRight.red() + 1000;
 
-        leftFront.setPower(pow);
+        turnC(250);
 
+        distanceDrive(1, armZone); //drive forward away from wall
 
-        distanceDrive(1, specimenDistance); // drive forwards to submersible
+        arm(specimenArm); // put arm in hang position
 
-        // hang specimen
-        arm(420);//change this
-        intake(1,500);
-        arm(0);
+        sleep(500); //wait for arm momentum to stop
 
-        distanceDrive(-1, 28);// drive till against wall 30 inches sub 2 for buffer
-        strafeRight(4.7); //drive to other wall into observation zone to park
+        distanceDrive(1, specimenDistance); // drive to the submersible at hang distance
+
+        arm(specimenArm - 1250); //hook specimen on bar
+
+        sleep(500); //wait for arm momentum to stop
+
+        intake(-1, 3000); // let go of specimen
+
+        arm(specimenArm - 1000); //bring arm up to not get stuck
+
+        distanceDrive(-1, armZone);// drive till against wall 30 inches sub 2 for buffer
+
+        turnC(1250); //turn so color sensors can see line
+
+        strafeRight(1500); // drive to wall
+
+        colorDrive(1); //drive into park zone
     }
 
     private void driveForward(double t) {
@@ -182,72 +201,86 @@ public class earlySeasonObservationZone extends LinearOpMode {
     private void distanceDrive(int dir, double dis) {
         double DRValue;
         double DLValue;
+        double DAValue;
 
-        if (dir > 0) { //forwards
-            while (distanceRight.getDistance(DistanceUnit.INCH) < dis && distanceLeft.getDistance(DistanceUnit.INCH) < dis) { // both sensors within distance
-                DRValue = distanceRight.getDistance(DistanceUnit.INCH);
-                DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
-                if (DRValue >= DLValue + .5) { // if right if further forwards
-                    leftFront.setPower(pow);
-                    leftBack.setPower(pow);
-                    rightFront.setPower(pow / 2);
-                    rightBack.setPower(pow / 2);
-                } else if (DLValue >= DRValue + .5) { // if left is further forwards
-                    leftFront.setPower(pow / 2);
-                    leftBack.setPower(pow / 2);
-                    rightFront.setPower(pow);
-                    rightBack.setPower(pow);
-                } else { // if within 1 inch of eachother
-                    leftFront.setPower(pow);
-                    leftBack.setPower(pow);
-                    rightFront.setPower(pow);
-                    rightBack.setPower(pow);
-                }
+        while (distanceRight.getDistance(DistanceUnit.INCH) < dis - .2 || distanceLeft.getDistance(DistanceUnit.INCH) < dis - .2 || distanceRight.getDistance(DistanceUnit.INCH) > dis + .2 || distanceLeft.getDistance(DistanceUnit.INCH) > dis + .2) {
+            DRValue = distanceRight.getDistance(DistanceUnit.INCH);
+            DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
+            DAValue = (DRValue+DLValue)/2;
+
+            if (DAValue > dis){ //if farther than want to be forwards
+                pow = 0.2;
+            } else if (DAValue < dis){ // if closer than want to be go backwards
+                pow = -0.2;
             }
-        } else { // backwards
-            while (distanceRight.getDistance(DistanceUnit.INCH) > dis && distanceLeft.getDistance(DistanceUnit.INCH) > dis) { // both sensors within distance
-                DRValue = distanceRight.getDistance(DistanceUnit.INCH);
-                DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
-                if (DRValue >= DLValue + .5) { // if right is further forwards
-                    leftFront.setPower(-pow / 2);
-                    leftBack.setPower(-pow / 2);
-                    rightFront.setPower(-pow);
-                    rightBack.setPower(-pow);
-                } else if (DLValue >= DRValue + .5) { //if left is further forwards
-                    leftFront.setPower(-pow);
-                    leftBack.setPower(-pow);
-                    rightFront.setPower(-pow / 2);
-                    rightBack.setPower(-pow / 2);
-                } else { // if within 1 inch of each other
-                    leftFront.setPower(-pow);
-                    leftBack.setPower(-pow);
-                    rightFront.setPower(-pow);
-                    rightBack.setPower(-pow);
-                }
+
+            if (DRValue > DLValue + .2 && pow > 0 || DLValue > DRValue + .2 && pow < 0) { // if right if further forwards
+                leftFront.setPower(pow);
+                leftBack.setPower(pow);
+                rightFront.setPower(pow / 2);
+                rightBack.setPower(pow / 2);
+            } else if (DRValue > DLValue + .2 && pow < 0 || DLValue > DRValue + .2 && pow > 0) { // if left is further forwards
+                leftFront.setPower(pow / 2);
+                leftBack.setPower(pow / 2);
+                rightFront.setPower(pow);
+                rightBack.setPower(pow);
+            } else { // if within 1 inch of eachother
+                leftFront.setPower(pow);
+                leftBack.setPower(pow);
+                rightFront.setPower(pow);
+                rightBack.setPower(pow);
             }
         }
+
         leftFront.setPower(0);
         leftBack.setPower(0);
         rightFront.setPower(0);
         rightBack.setPower(0);
+        pow = 0.4;
     }
 
     private void arm(int dis) {
-        while (armEncoder.getCurrentPosition() < dis - 25) { //move arm up
-            armRight.setPower(armPow);
-            armLeft.setPower(armPow);
-            telemetry.addData("arm encoder", armEncoder.getCurrentPosition());
-        }
-        while (armEncoder.getCurrentPosition() > dis + 25) { // move arm down
-            armRight.setPower(-armPow);
-            armLeft.setPower(-armPow);
+        while (armEncoder.getCurrentPosition() < dis - 30 || armEncoder.getCurrentPosition() > dis + 30) { //move arm up
+            if(armEncoder.getCurrentPosition() < dis - 30) {
+               armRight.setPower(armPow);
+               armLeft.setPower(armPow);
+            }
+           else {
+               armRight.setPower(-armPow);
+               armLeft.setPower(-armPow);
+           }
+           telemetry.addData("arm encoder", armEncoder.getCurrentPosition());
+           telemetry.update();
         }
         armLeft.setPower(0);
-        armLeft.setPower(0);
+        armRight.setPower(0);
+    }
+
+    public void colorDrive (int dir){
+        while (colorLeft.red() < targetRed && colorLeft.blue() < targetBlue){ //drive back till we see blue line then stop
+            leftFront.setPower(pow*dir);
+            leftBack.setPower(pow*dir);
+            rightBack.setPower(pow*dir);
+            rightFront.setPower(pow*dir);
+
+            telemetry.addData("colorLeft Red:", colorLeft.red());
+            telemetry.addData("colorLeft Blue:", colorLeft.blue());
+
+            telemetry.addData("target red", targetRed);
+            telemetry.addData("target blue", targetBlue);
+
+            telemetry.update();
+        }
+
+        leftFront.setPower(0);
+        leftBack.setPower(0);
+        rightBack.setPower(0);
+        rightFront.setPower(0);
+
     }
 
     private void intake(int dir, double t){
-        intake.setPower(pow*dir);
+        intake.setPower(1*dir);
         sleep((long) t);
         intake.setPower(0);
     }
