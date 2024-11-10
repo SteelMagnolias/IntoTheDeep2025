@@ -30,12 +30,12 @@ public class earlySeasonObservationZone extends LinearOpMode {
 
     // variables
     double pow = 0.4;
-    double armPow = 0.3;
+    double armPow = 0.6;
     double specimenDistance = 16; //inches
     double armZone = 20;
     int targetBlue = 2000;
     int targetRed = 2000;
-    int specimenArm = -1000;
+    int specimenArm = -1750;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -80,12 +80,12 @@ public class earlySeasonObservationZone extends LinearOpMode {
 
         telemetry.update();
 
-        intake.setPower(1); //hold specimen in
+        intake.setPower(0.5); //hold specimen in
 
         waitForStart();
 
-        targetBlue = colorRight.blue() + 1000;
-        targetRed = colorRight.red() + 1000;
+        targetBlue = colorRight.blue() + 750;
+        targetRed = colorRight.red() + 750;
 
         turnC(250);
 
@@ -97,7 +97,7 @@ public class earlySeasonObservationZone extends LinearOpMode {
 
         distanceDrive(1, specimenDistance); // drive to the submersible at hang distance
 
-        arm(specimenArm - 1000); //hook specimen on bar
+        arm(specimenArm - 2000); //hook specimen on bar
 
         sleep(500); //wait for arm momentum to stop
 
