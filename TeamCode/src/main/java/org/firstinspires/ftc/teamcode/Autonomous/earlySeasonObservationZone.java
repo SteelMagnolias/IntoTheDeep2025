@@ -85,7 +85,7 @@ public class earlySeasonObservationZone extends LinearOpMode {
         waitForStart();
 
         targetBlue = colorRight.blue() + 750;
-        targetRed = colorRight.red() + 750;
+        targetRed = colorRight.red() + 1000;
 
         turnC(250);
 
@@ -203,23 +203,54 @@ public class earlySeasonObservationZone extends LinearOpMode {
         double DLValue;
         double DAValue;
 
-        while (distanceRight.getDistance(DistanceUnit.INCH) < dis - .2 || distanceLeft.getDistance(DistanceUnit.INCH) < dis - .2 || distanceRight.getDistance(DistanceUnit.INCH) > dis + .2 || distanceLeft.getDistance(DistanceUnit.INCH) > dis + .2) {
+        while (distanceRight.getDistance(DistanceUnit.INCH) < dis - .3 || distanceLeft.getDistance(DistanceUnit.INCH) < dis - .3 || distanceRight.getDistance(DistanceUnit.INCH) > dis + .3 || distanceLeft.getDistance(DistanceUnit.INCH) > dis + .3) {
             DRValue = distanceRight.getDistance(DistanceUnit.INCH);
             DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
             DAValue = (DRValue+DLValue)/2;
 
-            if (DAValue > dis){ //if farther than want to be forwards
-                pow = 0.2;
-            } else if (DAValue < dis){ // if closer than want to be go backwards
-                pow = -0.2;
+            if (DRValue > 50){
+                leftFront.setPower(-pow);
+                leftBack.setPower(-pow);
+                rightFront.setPower(pow);
+                rightBack.setPower(pow);
+            } else if (DLValue > 50) {
+                leftFront.setPower(pow);
+                leftBack.setPower(pow);
+                rightFront.setPower(-pow);
+                rightBack.setPower(-pow);
+            } else if (DRValue > dis && DLValue > dis){ //if farther than want to be forwards
+                pow = 0.3;
+            } else if (DRValue < dis && DLValue < dis){ // if closer than want to be go backwards
+                pow = -0.3;
             }
 
-            if (DRValue > DLValue + .2 && pow > 0 || DLValue > DRValue + .2 && pow < 0) { // if right if further forwards
+
+            if (DRValue > 50){
+                leftFront.setPower(-pow);
+                leftBack.setPower(-pow);
+                rightFront.setPower(pow);
+                rightBack.setPower(pow);
+            } else if (DLValue > 50) {
+                leftFront.setPower(pow);
+                leftBack.setPower(pow);
+                rightFront.setPower(-pow);
+                rightBack.setPower(-pow);
+            } else if (DRValue > dis + .3 && DLValue < dis - .3){
+                leftFront.setPower(pow);
+                leftBack.setPower(pow);
+                rightFront.setPower(-pow);
+                rightBack.setPower(-pow);
+            } else if (DRValue < dis && DLValue > dis){
+                leftFront.setPower(-pow);
+                leftBack.setPower(-pow);
+                rightFront.setPower(pow);
+                rightBack.setPower(pow);
+            } else if (DRValue > DLValue + .3 && pow > 0 || DLValue > DRValue + .3 && pow < 0) { // if right if further forwards
                 leftFront.setPower(pow);
                 leftBack.setPower(pow);
                 rightFront.setPower(pow / 2);
                 rightBack.setPower(pow / 2);
-            } else if (DRValue > DLValue + .2 && pow < 0 || DLValue > DRValue + .2 && pow > 0) { // if left is further forwards
+            } else if (DRValue > DLValue + .3 && pow < 0 || DLValue > DRValue + .3 && pow > 0) { // if left is further forwards
                 leftFront.setPower(pow / 2);
                 leftBack.setPower(pow / 2);
                 rightFront.setPower(pow);
@@ -230,6 +261,11 @@ public class earlySeasonObservationZone extends LinearOpMode {
                 rightFront.setPower(pow);
                 rightBack.setPower(pow);
             }
+
+            distanceLeft = hardwareMap.get(DistanceSensor.class, "distanceLeft");
+            distanceRight = hardwareMap.get(DistanceSensor.class, "distanceRight");
+
+            telemetry.update();
         }
 
         leftFront.setPower(0);
