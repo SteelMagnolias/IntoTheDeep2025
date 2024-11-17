@@ -25,7 +25,6 @@ public class sensorTesting extends OpMode {
         armLeft = hardwareMap.get(DcMotor.class, "armLeft");
 
         //encoder setup
-        armLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         armEncoder = armLeft;
 
         // sensors
@@ -35,6 +34,7 @@ public class sensorTesting extends OpMode {
         distanceLeft = hardwareMap.get(DistanceSensor.class, "distanceLeft");
         distanceRight = hardwareMap.get(DistanceSensor.class, "distanceRight");
 
+        armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
 
     @Override

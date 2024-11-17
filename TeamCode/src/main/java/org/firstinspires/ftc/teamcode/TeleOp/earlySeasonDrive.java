@@ -14,12 +14,15 @@ public class earlySeasonDrive extends OpMode {
     private DcMotor rightBack;
     private DcMotor armLeft;
     private DcMotor armRight;
+    private DcMotor armEncoder;
     private CRServo intake;
 
     // variables
     double pow;
     double armPow;
     double theta; //angle of wheels joystick
+    double armPos;
+    int buffer = 200;
 
 
     public void init() {
@@ -36,6 +39,9 @@ public class earlySeasonDrive extends OpMode {
         leftFront.setDirection(DcMotor.Direction.REVERSE);
         rightFront.setDirection(DcMotor.Direction.REVERSE);
         armRight.setDirection(DcMotor.Direction.REVERSE);
+
+        //encoder setup
+        armEncoder = armLeft;
     }
 
     public void loop () {
@@ -73,6 +79,7 @@ public class earlySeasonDrive extends OpMode {
         boolean x2 = gamepad2.x; // this is the value of the x button on gamepad2
         boolean y2 = gamepad2.y; // this is the value of the y button on gamepad2
         boolean b2 = gamepad2.b; // this is the value of the b button on gamepad2
+        boolean back2 = gamepad2.back;
 
         // gamepad telemetry
         // gamepad 1
@@ -244,26 +251,57 @@ public class earlySeasonDrive extends OpMode {
         }
 
         // Arm code
-        //if the joystick is outside of the deadzone turn motors on to total power scaled by how far the joystick goes
+        telemetry.addData("arm encoder", armEncoder.getCurrentPosition());
         if(a2) armPow = 1;
         else armPow = 0.9;
 
-        if (Math.abs(lefty2) >= .1 ) {
-            armLeft.setPower(lefty2*armPow);
-            armRight.setPower(lefty2*armPow);
-        } else if (!buttonUp2 && !buttonDown2) { // if in dead zone turn off
-            armRight.setPower(0);
-            armLeft.setPower(0);
+        //reset encoder to zero positions based on zero is in bot
+        if (back2){
+            armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER); //set encoder to zero position
         }
 
-        //slow arm
-        armPow *= 0.3;
-        if (buttonUp2){
+        //set where we want to be
+        if(a2){
+            //manual
+            armPos = 0;
+        } else if (b2){
+            armPos = -250; //wall
+        }else if (y2){
+            armPos = -3164; //basket
+        } else if (x2){
+            armPos = -3436; //bar
+        }
+
+        //arm moving stuff
+        if (Math.abs(lefty2) >= .1 ) { //joystick
+            armLeft.setPower(lefty2*armPow);
+            armRight.setPower(lefty2*armPow);
+            armPos = 0;
+        } else if (buttonUp2){ //manual slow
+            armPow *= 0.3;
             armLeft.setPower(armPow);
             armRight.setPower(armPow);
-        } else if (buttonDown2){
+            armPos = 0;
+        } else if (buttonDown2){ //manual slow
+            armPow *= 0.3;
             armLeft.setPower(-armPow);
             armRight.setPower(-armPow);
+            armPos = 0;
+        } else if (armPos != 0) { // encoder
+            armPow = 0.6;
+            if (armPos > armEncoder.getCurrentPosition() + buffer){
+                armLeft.setPower(armPow);
+                armRight.setPower(armPow);
+            } else if (armPos < armEncoder.getCurrentPosition() - buffer){
+                armLeft.setPower(-armPow);
+                armRight.setPower(-armPow);
+            } else {
+                armLeft.setPower(0);
+                armRight.setPower(0);
+            }
+        } else { // turn off
+            armLeft.setPower(0);
+            armRight.setPower(0);
         }
 
         // intake code

@@ -33,6 +33,8 @@ public class earlySeasonNetZone extends LinearOpMode {
     int targetRed = 2000;
     int targetBlue = 2000;
     int targetGreen = 2000;
+    double buffer = 0.2;
+    double width = 5.125;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -51,8 +53,8 @@ public class earlySeasonNetZone extends LinearOpMode {
         armRight.setDirection(DcMotor.Direction.REVERSE);
 
         //encoder setup
-        armRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         armEncoder = armRight;
+        armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         // sensors
         distanceLeft = hardwareMap.get(DistanceSensor.class, "distanceLeft");
@@ -112,7 +114,7 @@ public class earlySeasonNetZone extends LinearOpMode {
         rightFront.setPower(0);
         rightBack.setPower(0);
 
-        distanceDrive(69, 6); // Moving forwards, stops before submersible
+        distanceDrive(6); // Moving forwards, stops before submersible
 
         arm(69); // Put arm up to park
     }
@@ -202,57 +204,42 @@ public class earlySeasonNetZone extends LinearOpMode {
         rightBack.setPower(0);
     }
 
-    private void distanceDrive ( int dir, double dis){
-        double DRValue;
-        double DLValue;
+    private void distanceDrive (double dis){
+        double DRValue = distanceRight.getDistance(DistanceUnit.INCH);
+        double DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
+        double DAValue = (DRValue+DLValue)/2 - dis;
 
-        if (dir > 0) { //forwards
-            while (distanceRight.getDistance(DistanceUnit.INCH) < dis && distanceLeft.getDistance(DistanceUnit.INCH) < dis) { // both sensors within distance
-                DRValue = distanceRight.getDistance(DistanceUnit.INCH);
-                DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
-                if (DRValue >= DLValue + .5) { // if right if further forwards
-                    leftFront.setPower(pow);
-                    leftBack.setPower(pow);
-                    rightFront.setPower(pow / 2);
-                    rightBack.setPower(pow / 2);
-                } else if (DLValue >= DRValue + .5) { // if left is further forwards
-                    leftFront.setPower(pow / 2);
-                    leftBack.setPower(pow / 2);
-                    rightFront.setPower(pow);
-                    rightBack.setPower(pow);
-                } else { // if within 1 inch of eachother
-                    leftFront.setPower(pow);
-                    leftBack.setPower(pow);
-                    rightFront.setPower(pow);
-                    rightBack.setPower(pow);
-                }
-            }
-        } else { // backwards
-            while (distanceRight.getDistance(DistanceUnit.INCH) > dis && distanceLeft.getDistance(DistanceUnit.INCH) > dis) { // both sensors within distance
-                DRValue = distanceRight.getDistance(DistanceUnit.INCH);
-                DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
-                if (DRValue >= DLValue + .5) { // if right is further forwards
-                    leftFront.setPower(-pow / 2);
-                    leftBack.setPower(-pow / 2);
-                    rightFront.setPower(-pow);
-                    rightBack.setPower(-pow);
-                } else if (DLValue >= DRValue + .5) { //if left is further forwards
-                    leftFront.setPower(-pow);
-                    leftBack.setPower(-pow);
-                    rightFront.setPower(-pow / 2);
-                    rightBack.setPower(-pow / 2);
-                } else { // if within 1 inch of each other
-                    leftFront.setPower(-pow);
-                    leftBack.setPower(-pow);
-                    rightFront.setPower(-pow);
-                    rightBack.setPower(-pow);
-                }
-            }
+        while(DAValue > buffer || DAValue < -buffer){
+            //variables
+            DRValue = distanceRight.getDistance(DistanceUnit.INCH);
+            DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
+            DAValue = (DRValue+DLValue)/2 - dis;
+
+            // forwards backwards movement
+            pow = 2*((DAValue + dis) / 30) - dis;
+
+            //turning movement
+            double dir = 1;
+            if(DLValue > DRValue) dir = -1;
+            double theta = dir * (90 - Math.abs (Math.atan (width / (DLValue - DRValue))));
+            if (theta > 0) theta += 10;
+            if (theta < 0) theta -= 10;
+            double thetaPow = 2 * ((theta+100)/200) - 1;
+
+            //set wheel power
+            leftFront.setPower(pow - thetaPow);
+            leftBack.setPower(pow - thetaPow);
+            rightFront.setPower(pow + thetaPow);
+            rightBack.setPower(pow + thetaPow);
         }
+
+        //reset wheels and pow
         leftFront.setPower(0);
         leftBack.setPower(0);
         rightFront.setPower(0);
         rightBack.setPower(0);
+
+        pow = 4;
     }
 
     private void arm(int dis){

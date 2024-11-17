@@ -56,8 +56,8 @@ public class earlySeasonObservationZone extends LinearOpMode {
         armRight.setDirection(DcMotor.Direction.REVERSE);
 
         //encoder setup
-        armRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         armEncoder = armLeft;
+        armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         // sensors
         distanceLeft = hardwareMap.get(DistanceSensor.class, "distanceLeft");
