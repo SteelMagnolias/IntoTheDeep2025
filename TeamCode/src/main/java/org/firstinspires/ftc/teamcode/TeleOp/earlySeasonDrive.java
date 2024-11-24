@@ -21,8 +21,8 @@ public class earlySeasonDrive extends OpMode {
     double pow;
     double armPow;
     double theta; //angle of wheels joystick
+    double desArmPos;
     double armPos;
-    int buffer = 200;
 
 
     public void init() {
@@ -254,6 +254,7 @@ public class earlySeasonDrive extends OpMode {
         telemetry.addData("arm encoder", armEncoder.getCurrentPosition());
         if(a2) armPow = 1;
         else armPow = 0.9;
+        armPos = armEncoder.getCurrentPosition();
 
         //reset encoder to zero positions based on zero is in bot
         if (back2){
@@ -263,46 +264,42 @@ public class earlySeasonDrive extends OpMode {
         //set where we want to be
         if(a2){
             //manual
-            armPos = 0;
+            desArmPos = 0;
         } else if (b2){
-            armPos = -250; //wall
+            desArmPos = -250; //wall
         }else if (y2){
-            armPos = -3164; //basket
+            desArmPos = -3164; //basket
         } else if (x2){
-            armPos = -3436; //bar
+            desArmPos = -3615; //bar
         }
 
         //arm moving stuff
         if (Math.abs(lefty2) >= .1 ) { //joystick
+            armPow = 0.9;
             armLeft.setPower(lefty2*armPow);
             armRight.setPower(lefty2*armPow);
-            armPos = 0;
+            desArmPos = 0;
         } else if (buttonUp2){ //manual slow
-            armPow *= 0.3;
+            armPow = 0.3;
             armLeft.setPower(armPow);
             armRight.setPower(armPow);
-            armPos = 0;
+            desArmPos = 0;
         } else if (buttonDown2){ //manual slow
-            armPow *= 0.3;
+            armPow = 0.3;
             armLeft.setPower(-armPow);
             armRight.setPower(-armPow);
-            armPos = 0;
-        } else if (armPos != 0) { // encoder
-            armPow = 0.6;
-            if (armPos > armEncoder.getCurrentPosition() + buffer){
-                armLeft.setPower(armPow);
-                armRight.setPower(armPow);
-            } else if (armPos < armEncoder.getCurrentPosition() - buffer){
-                armLeft.setPower(-armPow);
-                armRight.setPower(-armPow);
-            } else {
-                armLeft.setPower(0);
-                armRight.setPower(0);
-            }
+            desArmPos = 0;
+        } else if (desArmPos != 0) { // encoder
+            armPow = (armPos - desArmPos) * -0.0025;
+            armLeft.setPower(armPow);
+            armRight.setPower(armPow);
         } else { // turn off
             armLeft.setPower(0);
             armRight.setPower(0);
         }
+
+        telemetry.addData("Desired Arm Positio", desArmPos);
+        telemetry.addData("arm power", armPow);
 
         // intake code
         if (lb2){

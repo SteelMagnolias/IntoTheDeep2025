@@ -31,13 +31,13 @@ public class earlySeasonObservationZone extends LinearOpMode {
     // variables
     double pow = 0.4;
     double armPow = 0.6;
-    double specimenDistance = 16; //inches
+    double specimenDistance = 16.5; //inches
     double armZone = 20;
     int targetBlue = 2000;
     int targetRed = 2000;
-    int specimenArm = -1750;
-    double buffer = 0.2;
-    double width = 5.125;
+    int specimenArm = -3615;
+    double bufferW = 0.6;
+    double bufferA = 30;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -55,41 +55,38 @@ public class earlySeasonObservationZone extends LinearOpMode {
         rightFront.setDirection(DcMotor.Direction.REVERSE);
         armRight.setDirection(DcMotor.Direction.REVERSE);
 
+        intake.setPower(0.5); //hold specimen in
+
         //encoder setup
         armEncoder = armLeft;
         armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         // sensors
-        distanceLeft = hardwareMap.get(DistanceSensor.class, "distanceLeft");
-        distanceRight = hardwareMap.get(DistanceSensor.class, "distanceRight");
+            distanceLeft = hardwareMap.get(DistanceSensor.class, "distanceLeft");
+            distanceRight = hardwareMap.get(DistanceSensor.class, "distanceRight");
 
-        colorLeft = hardwareMap.get(ColorSensor.class, "colorLeft");
-        colorRight = hardwareMap.get(ColorSensor.class, "colorRight");
+            colorLeft = hardwareMap.get(ColorSensor.class, "colorLeft");
+            colorRight = hardwareMap.get(ColorSensor.class, "colorRight");
 
-        //telemetry
-        telemetry.addData("arm encoder", armEncoder.getCurrentPosition());
+            //telemetry
+            telemetry.addData("arm encoder", armEncoder.getCurrentPosition());
 
-        telemetry.addData("distanceLeft:", distanceLeft.getDistance(DistanceUnit.INCH));
-        telemetry.addData("distanceRight:", distanceRight.getDistance(DistanceUnit.INCH));
+            telemetry.addData("distanceLeft:", distanceLeft.getDistance(DistanceUnit.INCH));
+            telemetry.addData("distanceRight:", distanceRight.getDistance(DistanceUnit.INCH));
 
-        telemetry.addData("colorLeft Red:", colorLeft.red());
-        telemetry.addData("colorLeft Blue:", colorLeft.blue());
-        telemetry.addData("colorLeft Green: ", colorLeft.green());
+            telemetry.addData("colorLeft Red:", colorLeft.red());
+            telemetry.addData("colorLeft Blue:", colorLeft.blue());
+            telemetry.addData("colorLeft Green: ", colorLeft.green());
 
-        telemetry.addData("Color Sensor colorRight Red:", colorRight.red());
-        telemetry.addData("Color Sensor colorRight Blue:", colorRight.blue());
-        telemetry.addData("Color Sensor colorRight Green: ", colorRight.green());
+            telemetry.addData("Color Sensor colorRight Red:", colorRight.red());
+            telemetry.addData("Color Sensor colorRight Blue:", colorRight.blue());
+            telemetry.addData("Color Sensor colorRight Green: ", colorRight.green());
 
-        telemetry.update();
-
-        intake.setPower(0.5); //hold specimen in
-
+            telemetry.update();
         waitForStart();
 
-        targetBlue = colorRight.blue() + 750;
-        targetRed = colorRight.red() + 1000;
-
-        turnC(250);
+        targetBlue = colorRight.blue() + 250;
+        targetRed = colorRight.red() + 250;
 
         distanceDrive(armZone); //drive forward away from wall
 
@@ -99,15 +96,15 @@ public class earlySeasonObservationZone extends LinearOpMode {
 
         distanceDrive(specimenDistance); // drive to the submersible at hang distance
 
-        arm(specimenArm - 2000); //hook specimen on bar
+        arm(specimenArm - 650); //hook specimen on bar
 
         sleep(500); //wait for arm momentum to stop
 
         intake(-1, 3000); // let go of specimen
 
-        arm(specimenArm - 750); //bring arm up to not get stuck
-
         distanceDrive(armZone);// drive till against wall 30 inches sub 2 for buffer
+
+        arm(-2500); //bring arm up to not get stuck
 
         turnC(1000); //turn so color sensors can see line
 
@@ -205,49 +202,51 @@ public class earlySeasonObservationZone extends LinearOpMode {
         double DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
         double DAValue = (DRValue+DLValue)/2 - dis;
 
-        while(DAValue > buffer || DAValue < -buffer){
+        while(DAValue > bufferW || DAValue < - bufferW){
             //variables
             DRValue = distanceRight.getDistance(DistanceUnit.INCH);
             DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
             DAValue = (DRValue+DLValue)/2 - dis;
 
-            // forwards backwards movement
-            pow = 2*((DAValue + dis) / 30) - dis;
+            if (DRValue > DLValue + 5){
+                leftFront.setPower(pow);
+                leftBack.setPower(pow);
+                rightFront.setPower(-pow);
+                rightBack.setPower(-pow);
+            } else  if (DRValue > DLValue + 5) {
+                leftFront.setPower(-pow);
+                leftBack.setPower(-pow);
+                rightFront.setPower(pow);
+                rightBack.setPower(pow);
+            } else {
+                double lp = (DLValue + 0.1 - dis) * 0.08;
+                double rp = (DRValue + 0.1 - dis) * 0.08;
 
-            //turning movement
-            double dir = 1;
-            if(DLValue > DRValue) dir = -1;
-            double theta = dir * (90 - Math.abs (Math.atan (width / (DLValue - DRValue))));
-            if (theta > 0) theta += 10;
-            if (theta < 0) theta -= 10;
-            double thetaPow = 2 * ((theta+100)/200) - 1;
+                leftFront.setPower(lp);
+                leftBack.setPower(lp);
+                rightFront.setPower(rp);
+                rightBack.setPower(rp);
+            }
 
-            //set wheel power
-            leftFront.setPower(pow - thetaPow);
-            leftBack.setPower(pow - thetaPow);
-            rightFront.setPower(pow + thetaPow);
-            rightBack.setPower(pow + thetaPow);
+            telemetry.addData("distanceLeft:", distanceLeft.getDistance(DistanceUnit.INCH));
+            telemetry.addData("distanceRight:", distanceRight.getDistance(DistanceUnit.INCH));
+            telemetry.update();
         }
-
-        //reset wheels and pow
         leftFront.setPower(0);
         leftBack.setPower(0);
         rightFront.setPower(0);
         rightBack.setPower(0);
-
-        pow = 4;
     }
 
     private void arm(int dis) {
-        while (armEncoder.getCurrentPosition() < dis - 30 || armEncoder.getCurrentPosition() > dis + 30) { //move arm up
-            if(armEncoder.getCurrentPosition() < dis - 30) {
-               armRight.setPower(armPow);
-               armLeft.setPower(armPow);
-            }
-           else {
-               armRight.setPower(-armPow);
-               armLeft.setPower(-armPow);
-           }
+        while (armEncoder.getCurrentPosition() < dis - bufferA || armEncoder.getCurrentPosition() > dis + bufferA) {
+            double armPos = armEncoder.getCurrentPosition();
+
+            armPow = (armPos + 50 - dis) * -0.0025;
+
+            armLeft.setPower(armPow);
+            armRight.setPower(armPow);
+
            telemetry.addData("arm encoder", armEncoder.getCurrentPosition());
            telemetry.update();
         }
@@ -256,14 +255,15 @@ public class earlySeasonObservationZone extends LinearOpMode {
     }
 
     public void colorDrive (int dir){
-        while (colorLeft.red() < targetRed && colorLeft.blue() < targetBlue){ //drive back till we see blue line then stop
+        pow = 0.2;
+        while (colorRight.red() < targetRed && colorRight.blue() < targetBlue){ //drive back till we see blue line then stop
             leftFront.setPower(pow*dir);
             leftBack.setPower(pow*dir);
             rightBack.setPower(pow*dir);
             rightFront.setPower(pow*dir);
 
-            telemetry.addData("colorLeft Red:", colorLeft.red());
-            telemetry.addData("colorLeft Blue:", colorLeft.blue());
+            telemetry.addData("colorRight Red:", colorRight.red());
+            telemetry.addData("colorRight Blue:", colorRight.blue());
 
             telemetry.addData("target red", targetRed);
             telemetry.addData("target blue", targetBlue);
@@ -276,6 +276,7 @@ public class earlySeasonObservationZone extends LinearOpMode {
         rightBack.setPower(0);
         rightFront.setPower(0);
 
+        pow = 0.4;
     }
 
     private void intake(int dir, double t){
