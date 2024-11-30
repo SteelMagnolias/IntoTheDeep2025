@@ -83,6 +83,7 @@ public class earlySeasonObservationZone extends LinearOpMode {
             telemetry.addData("Color Sensor colorRight Green: ", colorRight.green());
 
             telemetry.update();
+
         waitForStart();
 
         targetBlue = colorRight.blue() + 250;
