@@ -23,6 +23,8 @@ public class earlySeasonDrive extends OpMode {
     double theta; //angle of wheels joystick
     double desArmPos;
     double armPos;
+    int shake = 0;
+    int shake2 = 0;
 
 
     public void init() {
@@ -121,7 +123,10 @@ public class earlySeasonDrive extends OpMode {
         else pow =0.9; // regular speed
         double c = Math.hypot(leftx1, lefty1); // find length of hypot using tan of triangle made by x and y
         double perct = pow * c; // scale by max power
-        if (c <= .1) perct = 0; // if we are less than .1 power, than just don't move since we are in dead zone
+        if (c <= .1) {
+            perct = 0; // if we are less than .1 power, than just don't move since we are in dead zone
+            shake = 0;
+        }
 
 
         // determine quandrant
@@ -248,6 +253,46 @@ public class earlySeasonDrive extends OpMode {
             leftBack.setPower(-pow);
             rightFront.setPower(pow);
             rightBack.setPower(pow);
+        } else if (b1){
+            shake = 1;
+        } else if (shake > 6){
+            shake = 0;
+            leftFront.setPower(0);
+            leftBack.setPower(0);
+            rightFront.setPower(0);
+            rightBack.setPower(0);
+        } else if (shake % 2 == 0 && shake > 0){
+            leftFront.setPower(pow);
+            leftBack.setPower(-pow);
+            rightFront.setPower(-pow);
+            rightBack.setPower(pow);
+            shake++;
+        } else if (shake % 2 != 0 && shake > 0){
+            leftFront.setPower(-pow);
+            leftBack.setPower(pow);
+            rightFront.setPower(pow);
+            rightBack.setPower(-pow);
+            shake++;
+        }else if (a1){
+            shake2 = 1;
+        } else if (shake2 > 6){
+            shake2 = 0;
+            leftFront.setPower(0);
+            leftBack.setPower(0);
+            rightFront.setPower(0);
+            rightBack.setPower(0);
+        } else if (shake2 % 2 == 0 && shake2 > 0){
+            leftFront.setPower(pow);
+            leftBack.setPower(-pow);
+            rightFront.setPower(-pow);
+            rightBack.setPower(pow);
+            shake++;
+        } else if (shake2 % 2 != 0 && shake2 > 0){
+            leftFront.setPower(-pow);
+            leftBack.setPower(pow);
+            rightFront.setPower(pow);
+            rightBack.setPower(-pow);
+            shake++;
         }
 
         // Arm code
