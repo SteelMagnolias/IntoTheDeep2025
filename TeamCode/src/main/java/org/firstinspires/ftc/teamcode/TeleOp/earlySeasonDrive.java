@@ -149,9 +149,6 @@ public class earlySeasonDrive extends OpMode {
             theta -= Math.PI;
             dir = -1;
         }
-        //if (leftx1 <= 0 && lefty1 >= 0 || leftx1 >= 0 && lefty1 <= 0){
-        //   theta += (Math.PI/2);
-        //}
 
 
         telemetry.addData("pow", pow);
@@ -273,7 +270,7 @@ public class earlySeasonDrive extends OpMode {
             rightFront.setPower(pow);
             rightBack.setPower(-pow);
             shake++;
-        }else if (a1){
+        }else if (x1){
             shake2 = 1;
         } else if (shake2 > 6){
             shake2 = 0;
@@ -343,14 +340,13 @@ public class earlySeasonDrive extends OpMode {
             armRight.setPower(0);
         }
 
-        telemetry.addData("Desired Arm Positio", desArmPos);
+        telemetry.addData("Desired Arm Position", desArmPos);
         telemetry.addData("arm power", armPow);
 
         // intake code
         if (lb2){
             intake.setPower(0.5); // open
-        }
-        else if (rb2){
+        } else if (rb2){
             intake.setPower(-0.5); // close
         } else{
             intake.setPower(0);
