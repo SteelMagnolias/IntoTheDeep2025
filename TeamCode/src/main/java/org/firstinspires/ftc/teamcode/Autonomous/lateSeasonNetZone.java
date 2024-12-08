@@ -63,8 +63,10 @@ public class lateSeasonNetZone extends OpMode {
     double previousBackEncoderPosition = 0;
 
     //other variables
-    double bufferW = 0.6;
+    double bufferD = 0.6;
     double bufferA = 30;
+    double bufferO = 2.5;
+    double bufferOT = 5;
 
     public void init () {
         //motors
@@ -127,11 +129,7 @@ public class lateSeasonNetZone extends OpMode {
 
         switch (step) {
             case 1:
-                //movement type
-                //if(pose[#] >= or <= # of centimeters or # of degrees){
-                //movement type (0)
-                step++;
-                //}
+
                 break;
             default:
                 drive(0, 0, 0, 0);
@@ -177,6 +175,93 @@ public class lateSeasonNetZone extends OpMode {
         previousBackEncoderPosition = backEncoderRawValue;
     }
 
+    private void odometryDrive (double desX, double desY, double desRobotAngle){
+        pow = 0.5;
+
+        double x = pose [0] - desX;
+        double y = pose [1] - desY;
+        double robotAngle = Math.toDegrees(pose[2]) - desRobotAngle;
+
+
+        double c = Math.hypot(x, y); // find length of hypot using tan of triangle made by x and y
+        double perct = pow * c; // scale by max power
+        double theta;
+
+        // determine quandrant
+        if (x <= 0 && y >= 0) {
+            theta = Math.atan(Math.abs(x) / Math.abs(y));
+            theta += (Math.PI / 2);
+        } else if (x < 0 && y <= 0) {
+            theta = Math.atan(Math.abs(y) / Math.abs(x));
+            theta += (Math.PI);
+        } else if (x >= 0 && y < 0) {
+            theta = Math.atan(Math.abs(x) / Math.abs(y));
+            theta += (3 * Math.PI / 2);
+        } else {
+            theta = Math.atan(Math.abs(y) / Math.abs(x));
+        }
+
+
+        double dir = 1; // default of direction being forward
+        if (theta >= Math.PI) { // if we have an angle other 180 degrees on unit circle, then direction is backward
+            theta -= Math.PI;
+            dir = -1;
+        }
+
+
+        telemetry.addData("pow", pow);
+        telemetry.addData("dir", dir);
+        telemetry.addData("c", c);
+        telemetry.addData("theta", theta);
+
+
+        // calculate power of front right wheel
+        double fr = dir * ((theta - (Math.PI / 4)) / (Math.PI / 4)); // wheels move on a 45 degree angle, find the ratio of where we want to drive to where we need to be
+        if (fr > 1) fr = 1; // cap speeds at 1 and -1
+        if (fr < -1) fr = -1;
+        fr = (perct * fr); // scale by power
+
+        // calculate power of back left wheel, wheels move on 45 degree angles, find the ratio between where we are and where we should be
+        double bl = dir * ((theta - (Math.PI / 4)) / (Math.PI / 4));
+        if (bl > 1) bl = 1; // cap speeds at 1 and -1
+        if (bl < -1) bl = -1;
+        bl = (perct * bl); // scale by power
+
+        // calculate power of front left wheel, wheels move on 45 degree angles, find the ratio between where we are and where we should be
+        double fl = -dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4));
+        if (fl > 1) fl = 1; // cap powers at 1 and -1
+        if (fl < -1) fl = -1;
+        fl = (perct * fl); // scale by power
+
+        // calculate power of back right wheel, wheels move on 45 degree angles, find the ratio between where we are and where we should be
+        double br = -dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4));
+        if (br > 1) br = 1; // cap powers at 1 and -1
+        if (br < -1) br = -1;
+        br = (perct * br); // scale by power
+
+        // add power for each wheel
+        telemetry.addData("fl", fl);
+        telemetry.addData("fr", fr);
+        telemetry.addData("bl", bl);
+        telemetry.addData("br", br);
+
+
+        telemetry.addData("rlf", -dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4)));
+        telemetry.addData("rrf", dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4)));
+        telemetry.addData("rbl", dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4)));
+        telemetry.addData("rbr", -dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4)));
+
+        double oKp = 1; // robot angle PID P
+        robotAngle *= oKp;
+
+
+        // set power of wheels and apply any rotation
+        leftFront.setPower(fl + robotAngle);
+        leftBack.setPower(bl + robotAngle);
+        rightFront.setPower(fr - robotAngle);
+        rightBack.setPower(br - robotAngle);
+    }
+
     private void driveForward(double p){
         leftFront.setPower(p);
         leftBack.setPower(p);
@@ -205,11 +290,11 @@ public class lateSeasonNetZone extends OpMode {
         rightBack.setPower(p);
     }
 
-    private void drive (double fl, double bl, double fr, double br){
-        leftFront.setPower(fl);
-        leftBack.setPower(bl);
-        rightFront.setPower(fr);
-        rightBack.setPower(br);
+    private void drive (double dfl, double dbl, double dfr, double dbr){
+        leftFront.setPower(dfl);
+        leftBack.setPower(dbl);
+        rightFront.setPower(dfr);
+        rightBack.setPower(dbr);
     }
 
     private void distanceDrive(double dis) {
@@ -217,7 +302,7 @@ public class lateSeasonNetZone extends OpMode {
         double DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
         double DAValue = (DRValue+DLValue)/2 - dis;
 
-        while(DAValue > bufferW || DAValue < - bufferW){
+        while(DAValue > bufferD || DAValue < - bufferD){
             //variables
             DRValue = distanceRight.getDistance(DistanceUnit.INCH);
             DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
