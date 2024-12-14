@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 @TeleOp (name = "earlySeasonDrive" , group = "Iterative Opmode")
 public class earlySeasonDrive extends OpMode {
@@ -23,9 +24,9 @@ public class earlySeasonDrive extends OpMode {
     double theta; //angle of wheels joystick
     double desArmPos;
     double armPos;
-    int shake = 0;
-    int shake2 = 0;
 
+    ElapsedTime shakeTimer = new ElapsedTime();
+    ElapsedTime shakeTimer2 = new ElapsedTime();
 
     public void init() {
         //map motors from configuration to motor names in code
@@ -125,7 +126,6 @@ public class earlySeasonDrive extends OpMode {
         double perct = pow * c; // scale by max power
         if (c <= .1) {
             perct = 0; // if we are less than .1 power, than just don't move since we are in dead zone
-            shake = 0;
         }
 
 
@@ -251,46 +251,31 @@ public class earlySeasonDrive extends OpMode {
             rightFront.setPower(pow);
             rightBack.setPower(pow);
         } else if (b1){
-            shake = 1;
-        } else if (shake > 6){
-            shake = 0;
-            leftFront.setPower(0);
-            leftBack.setPower(0);
-            rightFront.setPower(0);
-            rightBack.setPower(0);
-        } else if (shake % 2 == 0 && shake > 0){
-            leftFront.setPower(pow);
-            leftBack.setPower(-pow);
-            rightFront.setPower(-pow);
-            rightBack.setPower(pow);
-            shake++;
-        } else if (shake % 2 != 0 && shake > 0){
+            shakeTimer.reset();
+        } else if (shakeTimer.milliseconds() < 125 || shakeTimer.milliseconds() > 250 && shakeTimer.milliseconds() < 375){
             leftFront.setPower(-pow);
             leftBack.setPower(pow);
             rightFront.setPower(pow);
             rightBack.setPower(-pow);
-            shake++;
+        } else if (shakeTimer.milliseconds() > 125 && shakeTimer.milliseconds() < 250 || shakeTimer.milliseconds() > 375 && shakeTimer.milliseconds() < 500){
+            leftFront.setPower(pow);
+            leftBack.setPower(-pow);
+            rightFront.setPower(-pow);
+            rightBack.setPower(pow);
         }else if (x1){
-            shake2 = 1;
-        } else if (shake2 > 6){
-            shake2 = 0;
-            leftFront.setPower(0);
-            leftBack.setPower(0);
-            rightFront.setPower(0);
-            rightBack.setPower(0);
-        } else if (shake2 % 2 == 0 && shake2 > 0){
-            leftFront.setPower(pow);
-            leftBack.setPower(-pow);
-            rightFront.setPower(-pow);
-            rightBack.setPower(pow);
-            shake++;
-        } else if (shake2 % 2 != 0 && shake2 > 0){
+            shakeTimer2.reset();
+        } else if (shakeTimer2.milliseconds() < 125 || shakeTimer2.milliseconds() > 250 && shakeTimer2.milliseconds() < 375){
             leftFront.setPower(-pow);
-            leftBack.setPower(pow);
+            leftBack.setPower(-pow);
             rightFront.setPower(pow);
+            rightBack.setPower(pow);
+        } else if (shakeTimer2.milliseconds() > 125 && shakeTimer2.milliseconds() < 250 || shakeTimer2.milliseconds() > 375 && shakeTimer2.milliseconds() < 500){
+            leftFront.setPower(pow);
+            leftBack.setPower(pow);
+            rightFront.setPower(-pow);
             rightBack.setPower(-pow);
-            shake++;
         }
+
 
         // Arm code
         telemetry.addData("arm encoder", armEncoder.getCurrentPosition());
@@ -308,7 +293,7 @@ public class earlySeasonDrive extends OpMode {
             //manual
             desArmPos = 0;
         } else if (b2){
-            desArmPos = -250; //wall
+            desArmPos = -500; //wall
         }else if (y2){
             desArmPos = -3164; //basket
         } else if (x2){

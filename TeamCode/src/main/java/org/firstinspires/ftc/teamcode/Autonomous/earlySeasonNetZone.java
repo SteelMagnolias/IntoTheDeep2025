@@ -33,6 +33,9 @@ public class earlySeasonNetZone extends LinearOpMode {
     int targetBlue = 2000;
     int targetRed = 2000;
     int targetGreen = 2000;
+    int targetBlueLeft = 2000;
+    int targetRedLeft = 2000;
+    int targetGreenLeft = 2000;
     int sampleArm = -3164;
     int parkArm =  -4000;
     double bufferW = 0.6;
@@ -88,6 +91,10 @@ public class earlySeasonNetZone extends LinearOpMode {
         targetBlue = colorRight.blue() + 250;
         targetRed = colorRight.red() + 250;
         targetGreen = colorRight.green() + 250;
+
+        targetBlueLeft = colorLeft.blue() + 250;
+        targetRedLeft = colorLeft.red() + 250;
+        targetGreenLeft = colorLeft.green() + 250;
 
         colorDrive(1); // left to net zone line
 
@@ -224,6 +231,7 @@ public class earlySeasonNetZone extends LinearOpMode {
         double DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
         double DAValue = (DRValue+DLValue)/2 - dis;
 
+        pow = 0.2;
         while(DAValue > bufferW || DAValue < - bufferW){
             //variables
             DRValue = distanceRight.getDistance(DistanceUnit.INCH);
@@ -258,6 +266,7 @@ public class earlySeasonNetZone extends LinearOpMode {
         leftBack.setPower(0);
         rightFront.setPower(0);
         rightBack.setPower(0);
+        pow = 0.4;
     }
 
     private void arm(int dis) {
@@ -278,7 +287,7 @@ public class earlySeasonNetZone extends LinearOpMode {
 
     public void colorDrive (int dir){
         pow = 0.2;
-        while (colorLeft.red() < targetRed && colorLeft.blue() < targetBlue){ //drive back till we see blue line then stop
+        while (colorLeft.red() < targetRedLeft && colorLeft.blue() < targetBlueLeft){ //drive back till we see blue line then stop
             leftFront.setPower(pow*dir);
             leftBack.setPower(pow*dir);
             rightBack.setPower(pow*dir);

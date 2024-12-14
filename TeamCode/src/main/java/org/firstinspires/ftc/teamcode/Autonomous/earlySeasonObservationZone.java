@@ -35,6 +35,8 @@ public class earlySeasonObservationZone extends LinearOpMode {
     double armZone = 20;
     int targetBlue = 2000;
     int targetRed = 2000;
+    int targetBlueLeft = 2000;
+    int targetRedLeft = 2000;
     int specimenArm = -3615;
     double bufferW = 0.6;
     double bufferA = 30;
@@ -88,6 +90,9 @@ public class earlySeasonObservationZone extends LinearOpMode {
 
         targetBlue = colorRight.blue() + 250;
         targetRed = colorRight.red() + 250;
+
+        targetBlueLeft = colorLeft.blue() + 250;
+        targetRedLeft = colorLeft.red() + 250;
 
         distanceDrive(armZone); //drive forward away from wall
 
@@ -205,6 +210,7 @@ public class earlySeasonObservationZone extends LinearOpMode {
 
         while(DAValue > bufferW || DAValue < - bufferW){
             //variables
+            pow = 0.2;
             DRValue = distanceRight.getDistance(DistanceUnit.INCH);
             DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
             DAValue = (DRValue+DLValue)/2 - dis;
@@ -237,6 +243,7 @@ public class earlySeasonObservationZone extends LinearOpMode {
         leftBack.setPower(0);
         rightFront.setPower(0);
         rightBack.setPower(0);
+        pow = 0.2;
     }
 
     private void arm(int dis) {
