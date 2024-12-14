@@ -43,14 +43,17 @@ public class earlySeasonDrive extends OpMode {
         rightFront.setDirection(DcMotor.Direction.REVERSE);
         armRight.setDirection(DcMotor.Direction.REVERSE);
 
+        armRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        armLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
         //encoder setup
         armEncoder = armLeft;
     }
 
+
+    //gamepad variables get data from gamepads
     public void loop () {
         //main code
-
-        //gamepad variables get data from gamepads
         // gamepad 1
         double lefty1 = -(gamepad1.left_stick_y); // this is the value of gamepad1's left joystick y value
         double leftx1 = gamepad1.left_stick_x; // this is the value of gamepad1's left joystick x value
@@ -121,7 +124,7 @@ public class earlySeasonDrive extends OpMode {
 
         //wheels code
         if (a1) pow = 1; // turbo mode
-        else pow =0.9; // regular speed
+        else pow =0.8; // regular speed
         double c = Math.hypot(leftx1, lefty1); // find length of hypot using tan of triangle made by x and y
         double perct = pow * c; // scale by max power
         if (c <= .1) {
@@ -293,7 +296,7 @@ public class earlySeasonDrive extends OpMode {
             //manual
             desArmPos = 0;
         } else if (b2){
-            desArmPos = -500; //wall
+            desArmPos = -490; //wall
         }else if (y2){
             desArmPos = -3164; //basket
         } else if (x2){

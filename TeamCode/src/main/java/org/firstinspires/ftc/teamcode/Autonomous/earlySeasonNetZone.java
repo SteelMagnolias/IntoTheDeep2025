@@ -88,7 +88,7 @@ public class earlySeasonNetZone extends LinearOpMode {
 
         waitForStart();
 
-        targetBlue = colorRight.blue() + 250;
+        targetBlue = colorRight.blue() + 200;
         targetRed = colorRight.red() + 250;
         targetGreen = colorRight.green() + 250;
 
@@ -231,7 +231,6 @@ public class earlySeasonNetZone extends LinearOpMode {
         double DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
         double DAValue = (DRValue+DLValue)/2 - dis;
 
-        pow = 0.2;
         while(DAValue > bufferW || DAValue < - bufferW){
             //variables
             DRValue = distanceRight.getDistance(DistanceUnit.INCH);
@@ -266,7 +265,6 @@ public class earlySeasonNetZone extends LinearOpMode {
         leftBack.setPower(0);
         rightFront.setPower(0);
         rightBack.setPower(0);
-        pow = 0.4;
     }
 
     private void arm(int dis) {

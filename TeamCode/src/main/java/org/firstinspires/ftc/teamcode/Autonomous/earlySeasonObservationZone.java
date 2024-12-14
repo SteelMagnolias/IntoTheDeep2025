@@ -210,7 +210,6 @@ public class earlySeasonObservationZone extends LinearOpMode {
 
         while(DAValue > bufferW || DAValue < - bufferW){
             //variables
-            pow = 0.2;
             DRValue = distanceRight.getDistance(DistanceUnit.INCH);
             DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
             DAValue = (DRValue+DLValue)/2 - dis;
@@ -243,7 +242,6 @@ public class earlySeasonObservationZone extends LinearOpMode {
         leftBack.setPower(0);
         rightFront.setPower(0);
         rightBack.setPower(0);
-        pow = 0.2;
     }
 
     private void arm(int dis) {
