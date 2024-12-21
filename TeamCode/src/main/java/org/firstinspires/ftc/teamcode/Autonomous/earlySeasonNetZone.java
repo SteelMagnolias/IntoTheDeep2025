@@ -88,9 +88,9 @@ public class earlySeasonNetZone extends LinearOpMode {
 
         waitForStart();
 
-        targetBlue = colorRight.blue() + 200;
+        targetBlue = colorRight.blue() + 150;
         targetRed = colorRight.red() + 250;
-        targetGreen = colorRight.green() + 250;
+        targetGreen = colorRight.green() + 150;
 
         targetBlueLeft = colorLeft.blue() + 250;
         targetRedLeft = colorLeft.red() + 250;
@@ -122,7 +122,7 @@ public class earlySeasonNetZone extends LinearOpMode {
 
         turnCC(1400); //turn to face submersible
 
-        driveForward(600); // line up with space
+        driveForward(450); // line up with space
 
         strafeRight(750); // straten on wall
 

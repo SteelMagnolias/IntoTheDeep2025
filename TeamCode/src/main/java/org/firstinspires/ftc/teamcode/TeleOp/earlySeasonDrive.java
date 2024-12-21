@@ -215,7 +215,7 @@ public class earlySeasonDrive extends OpMode {
 
 
         // Below: precision (slower) movement
-        pow = 0.3;
+        pow = 0.275;
         if (buttonUp1) {
             // slowly moves forwards
             leftFront.setPower(pow);
