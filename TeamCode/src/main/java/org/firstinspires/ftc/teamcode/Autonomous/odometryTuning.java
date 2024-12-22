@@ -10,38 +10,31 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
-@Autonomous(name = "lateSeasonObservationZone", group = "Iterative OpMode")
-public class lateSeasonObservationZone extends OpMode {
+@Autonomous(name = "odonetryTuning", group = "Iterative OpMode")
+public class odometryTuning extends OpMode {
 
     //declare motors
     private DcMotor leftFront;
     private DcMotor leftBack;
     private DcMotor rightFront;
     private DcMotor rightBack;
-    private DcMotor armLeft;
-    private DcMotor armRight;
-    private CRServo intake;
 
     //declare encoders
     private DcMotor leftEncoder;
     private DcMotor rightEncoder;
     private DcMotor backEncoder;
-    private DcMotor armEncoder;
 
-    //declare sensors
-    private DistanceSensor distanceLeft;
-    private DistanceSensor distanceRight;
-    private ColorSensor colorLeft;
-    private ColorSensor colorRight;
 
     //stagnant variables
     double pow = 0.4;
-    double armPow = 0.6;
     int step = 1;
-    int targetBlue = 2000;
-    int targetRed = 2000;
-    int targetGreen = 2000;
-    ElapsedTime intakeTimer = new ElapsedTime();
+    ElapsedTime odometryTimer = new ElapsedTime();
+    double currentTime;
+    double oP;
+    double oI;
+    double oD;
+    double previousTime;
+    double previousError;
 
     //bot information
     double trackWidth = 20; //centimeters
@@ -63,10 +56,11 @@ public class lateSeasonObservationZone extends OpMode {
     double previousBackEncoderPosition = 0;
 
     //other variables
-    double bufferD = 0.6;
-    double bufferA = 30;
     double bufferO = 2.5;
     double bufferOT = 5;
+    double oKp = 1;
+    double oKi = 1;
+    double oKd = 1;
 
     public void init () {
         //motors
@@ -74,26 +68,15 @@ public class lateSeasonObservationZone extends OpMode {
         leftBack = hardwareMap.get(DcMotor.class, "leftBack");
         rightFront = hardwareMap.get(DcMotor.class, "rightFront");
         rightBack = hardwareMap.get(DcMotor.class, "rightBack");
-        armLeft = hardwareMap.get(DcMotor.class, "armLeft");
-        armRight = hardwareMap.get(DcMotor.class, "armRight");
-        intake = hardwareMap.get(CRServo.class, "intake");
-
-        // sensors
-        distanceLeft = hardwareMap.get(DistanceSensor.class, "distanceLeft");
-        distanceRight = hardwareMap.get(DistanceSensor.class, "distanceRight");
-        colorLeft = hardwareMap.get(ColorSensor.class, "colorLeft");
-        colorRight = hardwareMap.get(ColorSensor.class, "colorRight");
 
         //reverse motors
         leftFront.setDirection(DcMotor.Direction.REVERSE);
         rightFront.setDirection(DcMotor.Direction.REVERSE);
-        armRight.setDirection(DcMotor.Direction.REVERSE);
 
         //reset encoders
         rightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         leftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         //set wheels to run seperate from the encoders
         leftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -110,31 +93,24 @@ public class lateSeasonObservationZone extends OpMode {
         leftEncoder = leftFront;
         rightEncoder = rightFront;
         backEncoder = rightBack;
-        armEncoder = armLeft;
 
         //set start postition - reverse depending the direction the encoder is facing
         previousLeftEncoderPosition = leftEncoder.getCurrentPosition();
         previousRightEncoderPosition = rightEncoder.getCurrentPosition();
         previousBackEncoderPosition = backEncoder.getCurrentPosition();
-
-        intake.setPower(0.5);
-
-        targetBlue = colorRight.blue() + 250;
-        targetRed = colorRight.red() + 250;
-        targetGreen = colorRight.green() + 250;
     }
     public void loop(){
 
-            runOdometry();
+        runOdometry();
 
-            switch (step) {
-                case 1:
+        switch (step) {
+            case 1:
 
-                    break;
-                default:
-                    drive(0, 0, 0, 0);
-                    stop();
-            }
+                break;
+            default:
+                drive(0, 0, 0, 0);
+                stop();
+        }
     }
 
     private void runOdometry() {
@@ -174,10 +150,10 @@ public class lateSeasonObservationZone extends OpMode {
         previousRightEncoderPosition = rightEncoderRawValue;
         previousBackEncoderPosition = backEncoderRawValue;
     }
-    
+
     private void odometryDrive (double desX, double desY, double desRobotAngle){
         pow = 0.5;
-        
+
         double x = pose [0] - desX;
         double y = pose [1] - desY;
         double angle = Math.toDegrees(pose[2]) - desRobotAngle;
@@ -251,15 +227,20 @@ public class lateSeasonObservationZone extends OpMode {
         telemetry.addData("rbl", dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4)));
         telemetry.addData("rbr", -dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4)));
 
-        double oKp = 1; // robot angle PID P
-        angle *= oKp;
-
+        //PID on angle
+        currentTime = odometryTimer.milliseconds();
+        oP = angle * oKp;
+        oI = oKi * (angle * (currentTime - previousTime));
+        oD = oKd * (angle - previousError) / (currentTime - previousTime);
+        double anglePow = (oP + oI +oD);
+        previousTime = currentTime;
+        previousError = angle;
 
         // set power of wheels and apply any rotation
-        leftFront.setPower(fl + angle);
-        leftBack.setPower(bl + angle);
-        rightFront.setPower(fr - angle);
-        rightBack.setPower(br - angle);
+        leftFront.setPower(fl + anglePow);
+        leftBack.setPower(bl + anglePow);
+        rightFront.setPower(fr - anglePow);
+        rightBack.setPower(br - anglePow);
     }
 
     private void driveForward(double p){
@@ -295,81 +276,5 @@ public class lateSeasonObservationZone extends OpMode {
         leftBack.setPower(dbl);
         rightFront.setPower(dfr);
         rightBack.setPower(dbr);
-    }
-
-    private void distanceDrive(double dis) {
-        double DRValue = distanceRight.getDistance(DistanceUnit.INCH);
-        double DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
-        double DAValue = (DRValue+DLValue)/2 - dis;
-
-        while(DAValue > bufferD || DAValue < - bufferD){
-            //variables
-            DRValue = distanceRight.getDistance(DistanceUnit.INCH);
-            DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
-            DAValue = (DRValue+DLValue)/2 - dis;
-
-            if (DRValue > DLValue + 5){
-                leftFront.setPower(pow);
-                leftBack.setPower(pow);
-                rightFront.setPower(-pow);
-                rightBack.setPower(-pow);
-            } else  if (DRValue > DLValue + 5) {
-                leftFront.setPower(-pow);
-                leftBack.setPower(-pow);
-                rightFront.setPower(pow);
-                rightBack.setPower(pow);
-            } else {
-                double lp = (DLValue + 0.1 - dis) * 0.08;
-                double rp = (DRValue + 0.1 - dis) * 0.08;
-
-                leftFront.setPower(lp);
-                leftBack.setPower(lp);
-                rightFront.setPower(rp);
-                rightBack.setPower(rp);
-            }
-        }
-        leftFront.setPower(0);
-        leftBack.setPower(0);
-        rightFront.setPower(0);
-        rightBack.setPower(0);
-    }
-
-    private void arm(int dis) {
-        while (armEncoder.getCurrentPosition() < dis - bufferA || armEncoder.getCurrentPosition() > dis + bufferA) {
-            double armPos = armEncoder.getCurrentPosition();
-
-            armPow = (armPos + 50 - dis) * -0.0025;
-
-            armLeft.setPower(armPow);
-            armRight.setPower(armPow);
-        }
-        armLeft.setPower(0);
-        armRight.setPower(0);
-    }
-
-    public void colorDrive (int dir){
-        pow = 0.2;
-        while (colorLeft.red() < targetRed && colorLeft.blue() < targetBlue){ //drive back till we see blue line then stop
-            leftFront.setPower(pow*dir);
-            leftBack.setPower(pow*dir);
-            rightBack.setPower(pow*dir);
-            rightFront.setPower(pow*dir);
-        }
-
-        leftFront.setPower(0);
-        leftBack.setPower(0);
-        rightBack.setPower(0);
-        rightFront.setPower(0);
-
-        pow = 0.4;
-    }
-
-    private void intake(int dir, double t){
-        //reset timer in previous case
-        intake.setPower(1*dir);
-        if (intakeTimer.milliseconds() > t) {
-            intake.setPower(0);
-            step++;
-        }
     }
 }

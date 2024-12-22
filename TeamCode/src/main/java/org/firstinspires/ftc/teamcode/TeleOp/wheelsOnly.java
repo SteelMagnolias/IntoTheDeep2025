@@ -2,67 +2,36 @@ package org.firstinspires.ftc.teamcode.TeleOp;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
-@TeleOp (name = "earlySeasonDrive" , group = "Iterative Opmode")
-public class earlySeasonDrive extends OpMode {
+@TeleOp (name = "wheelsOnly" , group = "Iterative Opmode")
+public class wheelsOnly extends OpMode {
     // declare motors and servos
     private DcMotor leftFront;
     private DcMotor rightFront;
     private DcMotor leftBack;
     private DcMotor rightBack;
-    private DcMotor armLeft;
-    private DcMotor armRight;
-    private DcMotor armEncoder;
-    private CRServo intake;
 
     // variables
     double pow;
-    double armPow;
     double theta; //angle of wheels joystick
-    double desArmPos;
-    double armPos;
-    double currentTime;
-    double previousTime;
-    double currentError;
-    double previousError;
-    double P;
-    double I;
-    double D;
-    double KP = 0.00535;
-    double KI = 0.000002;
-    double KD = 0.5;
 
-
-
-    ElapsedTime armTimer = new ElapsedTime();
-    ElapsedTime shakeTimer = new ElapsedTime();
-    ElapsedTime shakeTimer2 = new ElapsedTime();
 
     public void init() {
         //map motors from configuration to motor names in code
-        leftBack  = hardwareMap.get(DcMotor.class, "leftBack");
+        leftBack = hardwareMap.get(DcMotor.class, "leftBack");
         rightBack = hardwareMap.get(DcMotor.class, "rightBack");
         leftFront = hardwareMap.get(DcMotor.class, "leftFront");
         rightFront = hardwareMap.get(DcMotor.class, "rightFront");
-        armLeft = hardwareMap.get(DcMotor.class, "armLeft");
-        armRight = hardwareMap.get(DcMotor.class, "armRight");
-        intake = hardwareMap.get(CRServo.class, "intake");
 
         //reverse motors
-        leftFront.setDirection(DcMotor.Direction.REVERSE);
+        rightBack.setDirection(DcMotor.Direction.REVERSE);
         rightFront.setDirection(DcMotor.Direction.REVERSE);
-        armRight.setDirection(DcMotor.Direction.REVERSE);
-
-        //encoder setup
-        armEncoder = armLeft;
     }
 
 
     //gamepad variables get data from gamepads
-    public void loop () {
+    public void loop() {
         //main code
         // gamepad 1
         double lefty1 = -(gamepad1.left_stick_y); // this is the value of gamepad1's left joystick y value
@@ -134,7 +103,7 @@ public class earlySeasonDrive extends OpMode {
 
         //wheels code
         if (a1) pow = 1; // turbo mode
-        else pow =0.8; // regular speed
+        else pow = 0.8; // regular speed
         double c = Math.hypot(leftx1, lefty1); // find length of hypot using tan of triangle made by x and y
         double perct = pow * c; // scale by max power
         if (c <= .1) {
@@ -183,7 +152,8 @@ public class earlySeasonDrive extends OpMode {
         if (bl > 1) bl = 1; // cap speeds at 1 and -1
         if (bl < -1) bl = -1;
         bl = (perct * bl); // scale by power
-        if (leftx1 < .1 && leftx1 > -.1 && lefty1 < .1 && lefty1 > -.1) bl = 0; // if no joystick movement, stop wheel
+        if (leftx1 < .1 && leftx1 > -.1 && lefty1 < .1 && lefty1 > -.1)
+            bl = 0; // if no joystick movement, stop wheel
 
 
         // calculate power of front left wheel, wheels move on 45 degree angles, find the ratio between where we are and where we should be
@@ -191,7 +161,8 @@ public class earlySeasonDrive extends OpMode {
         if (fl > 1) fl = 1; // cap powers at 1 and -1
         if (fl < -1) fl = -1;
         fl = (perct * fl); // scale by power
-        if (leftx1 < .1 && leftx1 > -.1 && lefty1 < .1 && lefty1 > -.1) fl = 0; // if no joystick movement, stop wheel
+        if (leftx1 < .1 && leftx1 > -.1 && lefty1 < .1 && lefty1 > -.1)
+            fl = 0; // if no joystick movement, stop wheel
 
 
         // calculate power of back right wheel, wheels move on 45 degree angles, find the ratio between where we are and where we should be
@@ -199,7 +170,8 @@ public class earlySeasonDrive extends OpMode {
         if (br > 1) br = 1; // cap powers at 1 and -1
         if (br < -1) br = -1;
         br = (perct * br); // scale by power
-        if (leftx1 < .1 && leftx1 > -.1 && lefty1 < .1 && lefty1 > -.1) br = 0; // if no joystick movement, stop
+        if (leftx1 < .1 && leftx1 > -.1 && lefty1 < .1 && lefty1 > -.1)
+            br = 0; // if no joystick movement, stop
 
 
         // add power for each wheel
@@ -213,8 +185,6 @@ public class earlySeasonDrive extends OpMode {
         telemetry.addData("rrf", dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4)));
         telemetry.addData("rbl", dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4)));
         telemetry.addData("rbr", -dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4)));
-
-
 
 
         // set power of wheels and apply any rotation
@@ -250,115 +220,18 @@ public class earlySeasonDrive extends OpMode {
             leftBack.setPower(pow);
             rightFront.setPower(pow);
             rightBack.setPower(-pow);
-        } else if (rb1){
+        } else if (rb1) {
             // rotate slowly right (clockwise)
             leftFront.setPower(pow);
             leftBack.setPower(pow);
             rightFront.setPower(-pow);
             rightBack.setPower(-pow);
-        }
-        else if (lb1) {
+        } else if (lb1) {
             // rotate slowly left (counter-clockwise)
             leftFront.setPower(-pow);
             leftBack.setPower(-pow);
             rightFront.setPower(pow);
             rightBack.setPower(pow);
-        } else if (b1){
-            shakeTimer.reset();
-        } else if (shakeTimer.milliseconds() < 125 || shakeTimer.milliseconds() > 250 && shakeTimer.milliseconds() < 375){
-            leftFront.setPower(-pow);
-            leftBack.setPower(pow);
-            rightFront.setPower(pow);
-            rightBack.setPower(-pow);
-        } else if (shakeTimer.milliseconds() > 125 && shakeTimer.milliseconds() < 250 || shakeTimer.milliseconds() > 375 && shakeTimer.milliseconds() < 500){
-            leftFront.setPower(pow);
-            leftBack.setPower(-pow);
-            rightFront.setPower(-pow);
-            rightBack.setPower(pow);
-        }else if (x1){
-            shakeTimer2.reset();
-        } else if (shakeTimer2.milliseconds() < 125 || shakeTimer2.milliseconds() > 250 && shakeTimer2.milliseconds() < 375){
-            leftFront.setPower(-pow);
-            leftBack.setPower(-pow);
-            rightFront.setPower(pow);
-            rightBack.setPower(pow);
-        } else if (shakeTimer2.milliseconds() > 125 && shakeTimer2.milliseconds() < 250 || shakeTimer2.milliseconds() > 375 && shakeTimer2.milliseconds() < 500){
-            leftFront.setPower(pow);
-            leftBack.setPower(pow);
-            rightFront.setPower(-pow);
-            rightBack.setPower(-pow);
-        }
-
-
-        // Arm code
-        telemetry.addData("arm encoder", -armEncoder.getCurrentPosition());
-        if(a2) armPow = 1;
-        else armPow = 0.9;
-
-        //PID stuff
-        armPos = -armEncoder.getCurrentPosition();
-        currentError = armPos - desArmPos;
-        currentTime = armTimer.milliseconds();
-
-        P = currentError * KP;
-        I = KI * (currentError * (currentTime - previousTime));
-        D = KD * (currentError - previousError) / (currentTime - previousTime);
-        armPow = (P + I + D);
-
-        previousTime = currentTime;
-        previousError = currentError;
-
-        //reset encoder to zero; positions based on zero is in bot
-        if (back2){
-            armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER); //set encoder to zero position
-        }
-
-        //set where we want to be
-        if(a2){
-            //manual
-            desArmPos = 0;
-        } else if (b2){
-            desArmPos = 500; //wall
-        }else if (y2){
-            desArmPos = 3164; //basket
-        } else if (x2){
-            desArmPos = 3775; //bar
-        }
-
-        //arm moving stuff
-        if (Math.abs(lefty2) >= .1 ) { //joystick
-            armPow = 0.9;
-            armLeft.setPower(lefty2*armPow);
-            armRight.setPower(lefty2*armPow);
-            desArmPos = 0;
-        } else if (buttonUp2){ //manual slow
-            armPow = 0.3;
-            armLeft.setPower(armPow);
-            armRight.setPower(armPow);
-            desArmPos = 0;
-        } else if (buttonDown2){ //manual slow
-            armPow = 0.3;
-            armLeft.setPower(-armPow);
-            armRight.setPower(-armPow);
-            desArmPos = 0;
-        } else if (desArmPos != 0) { // encoder
-            armLeft.setPower(armPow);
-            armRight.setPower(armPow);
-        } else { // turn off
-            armLeft.setPower(0);
-            armRight.setPower(0);
-        }
-
-        telemetry.addData("Desired Arm Position", desArmPos);
-        telemetry.addData("arm power", armPow);
-
-        // intake code
-        if (lb2){
-            intake.setPower(0.5); // open
-        } else if (rb2){
-            intake.setPower(-0.5); // close
-        } else{
-            intake.setPower(0);
         }
 
         // emergency stop
@@ -370,5 +243,4 @@ public class earlySeasonDrive extends OpMode {
     public void stop() {
         // stop code
     }
-
 }
