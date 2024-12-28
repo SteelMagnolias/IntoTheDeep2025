@@ -35,9 +35,19 @@ public class lateSeasonObservationZone extends OpMode {
     private ColorSensor colorRight;
 
     //stagnant variables
-    double pow = 0.4;
+    int stepW = 1;
+    int stepA = 1;
+    ElapsedTime odometryTimer = new ElapsedTime();
+    double currentTime;
+    double oP;
+    double oI;
+    double oD;
+    double previousTime;
+    double previousError;
+    double x;
+    double y;
+    double angle;
     double armPow = 0.6;
-    int step = 1;
     int targetBlue = 2000;
     int targetRed = 2000;
     int targetGreen = 2000;
@@ -45,9 +55,7 @@ public class lateSeasonObservationZone extends OpMode {
 
     //bot information
     double trackWidth = 20; //centimeters
-    double trackWidthDelta = 0; //for tuning
     double yOffset = -13.5; //centimeters
-    double yOffsetDelta = 0; //for tuning
     double leftWheelDiameter = 3.469; //centimeters
     double rightWheelDiameter = 3.315; //centimeters
     double backWheelDiameter = 3.471; //centimeters
@@ -65,8 +73,14 @@ public class lateSeasonObservationZone extends OpMode {
     //other variables
     double bufferD = 0.6;
     double bufferA = 30;
-    double bufferO = 2.5;
-    double bufferOT = 5;
+    double pow = 0.4;
+    double trackWidthDelta = 0; //for tuning
+    double yOffsetDelta = 0; //for tuning
+    double bufferO = 1;
+    double bufferOT = 3;
+    double oKp = 1;
+    double oKi = 1;
+    double oKd = 1;
 
     public void init () {
         //motors
@@ -127,7 +141,7 @@ public class lateSeasonObservationZone extends OpMode {
 
             runOdometry();
 
-            switch (step) {
+            switch (stepW) {
                 case 1:
 
                     break;
@@ -174,13 +188,13 @@ public class lateSeasonObservationZone extends OpMode {
         previousRightEncoderPosition = rightEncoderRawValue;
         previousBackEncoderPosition = backEncoderRawValue;
     }
-    
+
     private void odometryDrive (double desX, double desY, double desRobotAngle){
         pow = 0.5;
-        
-        double x = pose [0] - desX;
-        double y = pose [1] - desY;
-        double angle = Math.toDegrees(pose[2]) - desRobotAngle;
+
+        x = desX - pose [0];
+        y = desY - pose [1];
+        angle = desRobotAngle - Math.toDegrees(pose[2]);
 
 
         double c = Math.hypot(x, y); // find length of hypot using tan of triangle made by x and y
@@ -251,15 +265,26 @@ public class lateSeasonObservationZone extends OpMode {
         telemetry.addData("rbl", dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4)));
         telemetry.addData("rbr", -dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4)));
 
-        double oKp = 1; // robot angle PID P
-        angle *= oKp;
-
+        //PID on angle
+        currentTime = odometryTimer.milliseconds();
+        oP = angle * oKp;
+        oI = oKi * (angle * (currentTime - previousTime));
+        oD = oKd * (angle - previousError) / (currentTime - previousTime);
+        double anglePow = (oP + oI +oD);
+        previousTime = currentTime;
+        previousError = angle;
 
         // set power of wheels and apply any rotation
-        leftFront.setPower(fl + angle);
-        leftBack.setPower(bl + angle);
-        rightFront.setPower(fr - angle);
-        rightBack.setPower(br - angle);
+        leftFront.setPower(fl + anglePow);
+        leftBack.setPower(bl + anglePow);
+        rightFront.setPower(fr - anglePow);
+        rightBack.setPower(br - anglePow);
+    }
+
+    private void conditionalStep (){
+        if (x < bufferO && y < bufferO && angle < bufferOT){
+            stepW++;
+        }
     }
 
     private void driveForward(double p){
@@ -369,7 +394,7 @@ public class lateSeasonObservationZone extends OpMode {
         intake.setPower(1*dir);
         if (intakeTimer.milliseconds() > t) {
             intake.setPower(0);
-            step++;
+            stepA++;
         }
     }
 }

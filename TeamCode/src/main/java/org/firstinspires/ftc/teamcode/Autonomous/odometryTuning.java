@@ -2,15 +2,10 @@ package org.firstinspires.ftc.teamcode.Autonomous;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-
-@Autonomous(name = "odonetryTuning", group = "Iterative OpMode")
+@Autonomous(name = "odometryTuning", group = "Iterative OpMode")
 public class odometryTuning extends OpMode {
 
     //declare motors
@@ -26,7 +21,6 @@ public class odometryTuning extends OpMode {
 
 
     //stagnant variables
-    double pow = 0.4;
     int step = 1;
     ElapsedTime odometryTimer = new ElapsedTime();
     double currentTime;
@@ -35,12 +29,13 @@ public class odometryTuning extends OpMode {
     double oD;
     double previousTime;
     double previousError;
+    double x;
+    double y;
+    double angle;
 
     //bot information
     double trackWidth = 20; //centimeters
-    double trackWidthDelta = 0; //for tuning
     double yOffset = -13.5; //centimeters
-    double yOffsetDelta = 0; //for tuning
     double leftWheelDiameter = 3.469; //centimeters
     double rightWheelDiameter = 3.315; //centimeters
     double backWheelDiameter = 3.471; //centimeters
@@ -56,8 +51,11 @@ public class odometryTuning extends OpMode {
     double previousBackEncoderPosition = 0;
 
     //other variables
-    double bufferO = 2.5;
-    double bufferOT = 5;
+    double pow = 0.4;
+    double trackWidthDelta = 0; //for tuning
+    double yOffsetDelta = 0; //for tuning
+    double bufferO = 1;
+    double bufferOT = 3;
     double oKp = 1;
     double oKi = 1;
     double oKd = 1;
@@ -70,7 +68,7 @@ public class odometryTuning extends OpMode {
         rightBack = hardwareMap.get(DcMotor.class, "rightBack");
 
         //reverse motors
-        leftFront.setDirection(DcMotor.Direction.REVERSE);
+        rightBack.setDirection(DcMotor.Direction.REVERSE);
         rightFront.setDirection(DcMotor.Direction.REVERSE);
 
         //reset encoders
@@ -105,7 +103,44 @@ public class odometryTuning extends OpMode {
 
         switch (step) {
             case 1:
-
+                odometryDrive(10, 0, 0);
+                conditionalStep();
+                break;
+            case 2:
+                odometryDrive(10, 10, 0);
+                conditionalStep();
+                break;
+            case 3:
+                odometryDrive(-10, 10, 0);
+                conditionalStep();
+                break;
+            case 4:
+                odometryDrive(-10, -10, 0);
+                conditionalStep();
+                break;
+            case 5:
+                odometryDrive(0, 0, 0);
+                conditionalStep();
+                break;
+            case 6:
+                odometryDrive(0, 0, 90);
+                conditionalStep();
+                break;
+            case 7:
+                odometryDrive(0, 0, -90);
+                conditionalStep();
+                break;
+            case 8:
+                odometryDrive(0, 0, 0);
+                conditionalStep();
+                break;
+            case 9:
+                odometryDrive(-10, 5, 180);
+                conditionalStep();
+                break;
+            case 10:
+                odometryDrive(0, 0, 0);
+                conditionalStep();
                 break;
             default:
                 drive(0, 0, 0, 0);
@@ -154,9 +189,9 @@ public class odometryTuning extends OpMode {
     private void odometryDrive (double desX, double desY, double desRobotAngle){
         pow = 0.5;
 
-        double x = pose [0] - desX;
-        double y = pose [1] - desY;
-        double angle = Math.toDegrees(pose[2]) - desRobotAngle;
+        x = desX - pose [0];
+        y = desY - pose [1];
+        angle = desRobotAngle - Math.toDegrees(pose[2]);
 
 
         double c = Math.hypot(x, y); // find length of hypot using tan of triangle made by x and y
@@ -241,6 +276,12 @@ public class odometryTuning extends OpMode {
         leftBack.setPower(bl + anglePow);
         rightFront.setPower(fr - anglePow);
         rightBack.setPower(br - anglePow);
+    }
+
+    private void conditionalStep (){
+        if (x < bufferO && y < bufferO && angle < bufferOT){
+            step++;
+        }
     }
 
     private void driveForward(double p){

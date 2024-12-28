@@ -291,12 +291,29 @@ public class earlySeasonDrive extends OpMode {
 
 
         // Arm code
-        telemetry.addData("arm encoder", -armEncoder.getCurrentPosition());
+        telemetry.addData("arm encoder", armPos);
         if(a2) armPow = 1;
         else armPow = 0.9;
 
+        //reset encoder to zero; positions based on zero is in bot
+        if (back2){
+            armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER); //set encoder to zero position
+        }
+
+        //set where we want to be
+        if(a2){
+            //stop
+            desArmPos = 0;
+        } else if (b2){
+            desArmPos = 500; //wall
+        }else if (y2){
+            desArmPos = 3164; //basket
+        } else if (x2){
+            desArmPos = 3775; //bar
+        }
+
         //PID stuff
-        armPos = -armEncoder.getCurrentPosition();
+        armPos = armEncoder.getCurrentPosition();
         currentError = armPos - desArmPos;
         currentTime = armTimer.milliseconds();
 
@@ -308,39 +325,22 @@ public class earlySeasonDrive extends OpMode {
         previousTime = currentTime;
         previousError = currentError;
 
-        //reset encoder to zero; positions based on zero is in bot
-        if (back2){
-            armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER); //set encoder to zero position
-        }
-
-        //set where we want to be
-        if(a2){
-            //manual
-            desArmPos = 0;
-        } else if (b2){
-            desArmPos = 500; //wall
-        }else if (y2){
-            desArmPos = 3164; //basket
-        } else if (x2){
-            desArmPos = 3775; //bar
-        }
-
         //arm moving stuff
         if (Math.abs(lefty2) >= .1 ) { //joystick
             armPow = 0.9;
             armLeft.setPower(lefty2*armPow);
             armRight.setPower(lefty2*armPow);
-            desArmPos = 0;
+            desArmPos = armPos;
         } else if (buttonUp2){ //manual slow
             armPow = 0.3;
             armLeft.setPower(armPow);
             armRight.setPower(armPow);
-            desArmPos = 0;
+            desArmPos = armPos;
         } else if (buttonDown2){ //manual slow
             armPow = 0.3;
             armLeft.setPower(-armPow);
             armRight.setPower(-armPow);
-            desArmPos = 0;
+            desArmPos = armPos;
         } else if (desArmPos != 0) { // encoder
             armLeft.setPower(armPow);
             armRight.setPower(armPow);
