@@ -56,9 +56,9 @@ public class odometryTuning extends OpMode {
     double yOffsetDelta = 0; //for tuning
     double bufferO = 1;
     double bufferOT = 3;
-    double oKp = 1;
-    double oKi = 1;
-    double oKd = 1;
+    double Op = 1;
+    double Oi = 0;
+    double Od = 0;
 
     public void init () {
         //motors
@@ -264,9 +264,9 @@ public class odometryTuning extends OpMode {
 
         //PID on angle
         currentTime = odometryTimer.milliseconds();
-        oP = angle * oKp;
-        oI = oKi * (angle * (currentTime - previousTime));
-        oD = oKd * (angle - previousError) / (currentTime - previousTime);
+        oP = angle * Op;
+        oI = Oi * (angle * (currentTime - previousTime));
+        oD = Od * (angle - previousError) / (currentTime - previousTime);
         double anglePow = (oP + oI +oD);
         previousTime = currentTime;
         previousError = angle;

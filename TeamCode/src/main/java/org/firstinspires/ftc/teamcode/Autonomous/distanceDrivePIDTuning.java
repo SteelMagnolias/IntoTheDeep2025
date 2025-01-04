@@ -35,9 +35,9 @@ public class distanceDrivePIDTuning extends OpMode {
     double P;
     double I;
     double D;
-    double KP = 0.08;
-    double KI = 0;
-    double KD = 0;
+    double DP = 0.08;
+    double DI = 0;
+    double DD = 0;
 
     public void init() {
         leftBack = hardwareMap.get(DcMotor.class, "leftBack");
@@ -65,9 +65,9 @@ public class distanceDrivePIDTuning extends OpMode {
             currentErrorLeft = disLeft - desDis;
             currentTime = PIDTimer.milliseconds();
 
-            P = currentErrorLeft * KP;
-            I = KI * (currentErrorLeft * (currentTime - previousTime));
-            D = KD * (currentErrorLeft - previousErrorLeft) / (currentTime - previousTime);
+            P = currentErrorLeft * DP;
+            I = DI * (currentErrorLeft * (currentTime - previousTime));
+            D = DD * (currentErrorLeft - previousErrorLeft) / (currentTime - previousTime);
             powLeft = (P + I + D);
 
             previousErrorLeft = currentErrorLeft;
@@ -77,9 +77,9 @@ public class distanceDrivePIDTuning extends OpMode {
             currentErrorRight = disRight - desDis;
             currentTime = PIDTimer.milliseconds();
 
-            P = currentErrorRight * KP;
-            I = KI * (currentErrorRight * (currentTime - previousTime));
-            D = KD * (currentErrorRight - previousErrorRight) / (currentTime - previousTime);
+            P = currentErrorRight * DP;
+            I = DI * (currentErrorRight * (currentTime - previousTime));
+            D = DD * (currentErrorRight - previousErrorRight) / (currentTime - previousTime);
             powRight = (P + I + D);
 
             previousTime = currentTime;

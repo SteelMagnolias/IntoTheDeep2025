@@ -9,7 +9,6 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 public class linearSlidesPIDTuning extends OpMode {
 
     private DcMotor linearSlidesLeft;
-    private DcMotor linearSlidesRight;
     private DcMotor armEncoder;
 
     ElapsedTime armTimer = new ElapsedTime();
@@ -24,13 +23,12 @@ public class linearSlidesPIDTuning extends OpMode {
     double P;
     double I;
     double D;
-    double KP = 0.00535;
-    double KI = 0.000002;
-    double KD = 0.5;
+    double SP = 0.00535;
+    double SI = 0.000002;
+    double SD = 0.5;
 
     public void init() {
         linearSlidesLeft = hardwareMap.get(DcMotor.class, "linearSlidesLeft");
-        linearSlidesRight = hardwareMap.get(DcMotor.class, "linearSlidesRight");
 
         //encoder setup
         armEncoder = linearSlidesLeft;
@@ -51,16 +49,15 @@ public class linearSlidesPIDTuning extends OpMode {
             currentError = ArmLength - desLength;
             currentTime = armTimer.milliseconds();
 
-            P = currentError * KP;
-            I = KI * (currentError * (currentTime - previousTime));
-            D = KD * (currentError - previousError) / (currentTime - previousTime);
+            P = currentError * SP;
+            I = SI * (currentError * (currentTime - previousTime));
+            D = SD * (currentError - previousError) / (currentTime - previousTime);
             linearSlidesPow = (P + I + D);
 
             previousTime = currentTime;
             previousError = currentError;
 
             linearSlidesLeft.setPower(linearSlidesPow);
-            linearSlidesRight.setPower(linearSlidesPow);
         }
 
         telemetry.addData("linearSlidesPow", linearSlidesPow);

@@ -19,13 +19,13 @@ public class colorTesting extends OpMode {
     @Override
     public void loop() {
 
-        telemetry.addData("colorLeft Red:", colorLeft.red());
-        telemetry.addData("colorLeft Blue:", colorLeft.blue());
-        telemetry.addData("colorLeft Green: ", colorLeft.green());
+        telemetry.addData("Color Left Red:", colorLeft.red());
+        telemetry.addData("Color Left Blue:", colorLeft.blue());
+        telemetry.addData("Color Left Green: ", colorLeft.green());
 
-        telemetry.addData("Color Sensor colorRight Red:", colorRight.red());
-        telemetry.addData("Color Sensor colorRight Blue:", colorRight.blue());
-        telemetry.addData("Color Sensor colorRight Green: ", colorRight.green());
+        telemetry.addData("Color Right Red:", colorRight.red());
+        telemetry.addData("Color Right Blue:", colorRight.blue());
+        telemetry.addData("Color Right Green: ", colorRight.green());
 
         telemetry.update();
 

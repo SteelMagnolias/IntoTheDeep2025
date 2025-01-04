@@ -24,9 +24,9 @@ public class armPIDTuning extends OpMode {
     double P;
     double I;
     double D;
-    double KP = 0.00535;
-    double KI = 0.000002;
-    double KD = 0.5;
+    double AP = 0.00535;
+    double AI = 0.000002;
+    double AD = 0.5;
 
     public void init() {
         armLeft = hardwareMap.get(DcMotor.class, "armLeft");
@@ -53,9 +53,9 @@ public class armPIDTuning extends OpMode {
             currentError = armPos - desArmPos;
             currentTime = armTimer.milliseconds();
 
-            P = currentError * KP;
-            I = KI * (currentError * (currentTime - previousTime));
-            D = KD * (currentError - previousError) / (currentTime - previousTime);
+            P = currentError * AP;
+            I = AI * (currentError * (currentTime - previousTime));
+            D = AD * (currentError - previousError) / (currentTime - previousTime);
             armPow = (P + I + D);
 
             previousTime = currentTime;

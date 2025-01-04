@@ -30,9 +30,9 @@ public class distanceStrafePIDTuning extends OpMode {
     double P;
     double I;
     double D;
-    double KP = 0.08;
-    double KI = 0;
-    double KD = 0;
+    double DSP = 0.08;
+    double DSI = 0;
+    double DSD = 0;
 
     public void init() {
         leftBack = hardwareMap.get(DcMotor.class, "leftBack");
@@ -59,9 +59,9 @@ public class distanceStrafePIDTuning extends OpMode {
             currentErrorSide = disSide - desDis;
             currentTime = PIDTimer.milliseconds();
 
-            P = currentErrorSide * KP;
-            I = KI * (currentErrorSide * (currentTime - previousTime));
-            D = KD * (currentErrorSide - previousErrorSide) / (currentTime - previousTime);
+            P = currentErrorSide * DSP;
+            I = DSI * (currentErrorSide * (currentTime - previousTime));
+            D = DSD * (currentErrorSide - previousErrorSide) / (currentTime - previousTime);
             pow = (P + I + D);
 
             previousTime = currentTime;
