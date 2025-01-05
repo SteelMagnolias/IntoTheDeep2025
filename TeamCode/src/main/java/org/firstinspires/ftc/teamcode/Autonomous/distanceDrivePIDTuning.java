@@ -35,7 +35,7 @@ public class distanceDrivePIDTuning extends OpMode {
     double P;
     double I;
     double D;
-    double DP = 0.08;
+    double DP = 0.025;
     double DI = 0;
     double DD = 0;
 
@@ -48,8 +48,8 @@ public class distanceDrivePIDTuning extends OpMode {
         distanceLeft = hardwareMap.get(DistanceSensor.class, "distanceLeft");
         distanceRight = hardwareMap.get(DistanceSensor.class, "distanceRight");
 
+        leftFront.setDirection(DcMotor.Direction.REVERSE);
         rightFront.setDirection(DcMotor.Direction.REVERSE);
-        rightBack.setDirection(DcMotor.Direction.REVERSE);
     }
 
     @Override
@@ -57,38 +57,43 @@ public class distanceDrivePIDTuning extends OpMode {
         double lefty2 = -(gamepad2.left_stick_y);
         boolean a2 = gamepad2.a;
 
-        desDis += lefty2 * 3;
+        desDis += lefty2 / 4;
 
-        if(a2) {
-            //PID stuff left
-            disLeft = distanceLeft.getDistance(DistanceUnit.CM);
-            currentErrorLeft = disLeft - desDis;
-            currentTime = PIDTimer.milliseconds();
+        //PID stuff left
+        disLeft = distanceLeft.getDistance(DistanceUnit.CM);
+        currentErrorLeft = disLeft - desDis;
+        currentTime = PIDTimer.milliseconds();
 
-            P = currentErrorLeft * DP;
-            I = DI * (currentErrorLeft * (currentTime - previousTime));
-            D = DD * (currentErrorLeft - previousErrorLeft) / (currentTime - previousTime);
-            powLeft = (P + I + D);
+        P = currentErrorLeft * DP;
+        I = DI * (currentErrorLeft * (currentTime - previousTime));
+        D = DD * (currentErrorLeft - previousErrorLeft) / (currentTime - previousTime);
+        powLeft = (P + I + D);
 
-            previousErrorLeft = currentErrorLeft;
+        previousErrorLeft = currentErrorLeft;
 
-            //PID stuff right
-            disRight = distanceRight.getDistance(DistanceUnit.CM);
-            currentErrorRight = disRight - desDis;
-            currentTime = PIDTimer.milliseconds();
+        //PID stuff right
+        disRight = distanceRight.getDistance(DistanceUnit.CM);
+        currentErrorRight = disRight - desDis;
+        currentTime = PIDTimer.milliseconds();
 
-            P = currentErrorRight * DP;
-            I = DI * (currentErrorRight * (currentTime - previousTime));
-            D = DD * (currentErrorRight - previousErrorRight) / (currentTime - previousTime);
-            powRight = (P + I + D);
+        P = currentErrorRight * DP;
+        I = DI * (currentErrorRight * (currentTime - previousTime));
+        D = DD * (currentErrorRight - previousErrorRight) / (currentTime - previousTime);
+        powRight = (P + I + D);
 
-            previousTime = currentTime;
-            previousErrorRight = currentErrorRight;
+        previousTime = currentTime;
+        previousErrorRight = currentErrorRight;
 
+        if(a2 && disRight < 150 && disLeft < 150 ) {
             rightBack.setPower(powRight);
             rightFront.setPower(powRight);
             leftBack.setPower(powLeft);
             leftFront.setPower(powLeft);
+        } else {
+            rightBack.setPower(0);
+            rightFront.setPower(0);
+            leftBack.setPower(0);
+            leftFront.setPower(0);
         }
 
         telemetry.addData("powRight", powRight);

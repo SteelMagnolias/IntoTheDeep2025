@@ -1,9 +1,11 @@
 package org.firstinspires.ftc.teamcode.Autonomous;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 
+@Disabled
 @Autonomous(name= "colorTesting", group="Iterative Opmode")
 public class colorTesting extends OpMode {
     // sensors

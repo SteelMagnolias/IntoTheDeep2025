@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.Autonomous;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
@@ -10,7 +11,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
-@Autonomous(name = "odometryTuning", group = "Iterative OpMode")
+@Disabled
+@Autonomous(name = "autonTest", group = "Iterative OpMode")
 public class autonTest extends OpMode {
 
     // motors & servos
@@ -63,9 +65,11 @@ public class autonTest extends OpMode {
     double distanceErrorLeft = 0;
     double distanceErrorRight = 0;
     double distanceErrorSide = 0;
+
     double previousDistanceErrorLeft = 0;
     double previousDistanceErrorRight = 0;
     double previousDistanceErrorSide = 0;
+
     double desDis;
     double disLeft;
     double disRight;
@@ -132,6 +136,7 @@ public class autonTest extends OpMode {
     //other variables
     double bufferD = 0.6;
     double bufferA = 30;
+    double bufferL = 3;
     double bufferO = 1;
     double bufferOT = 3;
 
@@ -225,6 +230,7 @@ public class autonTest extends OpMode {
                 break;
         }
 
+        telemetry();
         previousTime = currentTime;
     }
 
@@ -419,7 +425,7 @@ public class autonTest extends OpMode {
          previousDistanceErrorRight = distanceErrorRight;
     }
 
-    private void distanceSide (){
+    private void distanceStrafe (){
         disSide = distanceSide.getDistance(DistanceUnit.CM);
         distanceErrorSide = disSide - desDis;
 

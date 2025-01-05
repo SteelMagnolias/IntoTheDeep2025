@@ -7,9 +7,10 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-@Disabled
+
 @Autonomous (name = "earlySeasonNetZone" , group = "Linear OpMode")
 public class earlySeasonNetZone extends LinearOpMode {
     // declare motors and servos
@@ -41,6 +42,12 @@ public class earlySeasonNetZone extends LinearOpMode {
     int parkArm =  -4000;
     double bufferW = 0.6;
     double bufferA = 30;
+    ElapsedTime PIDTimer = new ElapsedTime();
+    double currentTime;
+    double previousTime;
+    double AP = 0.00535;
+    double AI = 0.000002;
+    double AD = 0.5;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -97,6 +104,8 @@ public class earlySeasonNetZone extends LinearOpMode {
         targetRedLeft = colorLeft.red() + 250;
         targetGreenLeft = colorLeft.green() + 250;
 
+        strafeRight(100); // line up with bucket
+
         colorDrive(1); // left to net zone line
 
         //turn right to line
@@ -108,8 +117,6 @@ public class earlySeasonNetZone extends LinearOpMode {
             rightBack.setPower(pow);
         }
         pow = 0.4;
-
-        strafeRight(100); // line up with bucket
 
         driveBackwards(150); // back up to get in bucket
 
@@ -269,14 +276,19 @@ public class earlySeasonNetZone extends LinearOpMode {
     }
 
     private void arm(int dis) {
+        double previousArmError = 0;
         while (armEncoder.getCurrentPosition() < dis - bufferA || armEncoder.getCurrentPosition() > dis + bufferA) {
+            currentTime = PIDTimer.milliseconds();
             double armPos = armEncoder.getCurrentPosition();
+            double armError = armPos - dis;
 
-            armPow = (armPos + 50 - dis) * -0.0025;
+            armPow = ((armError * AP) + (AI * (armError * (currentTime - previousTime))) + (AD * (armError - previousArmError) / (currentTime - previousTime)));
 
             armLeft.setPower(armPow);
             armRight.setPower(armPow);
 
+            previousArmError = armError;
+            previousTime = currentTime;
             telemetry.addData("arm encoder", armEncoder.getCurrentPosition());
             telemetry.update();
         }

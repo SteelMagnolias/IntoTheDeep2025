@@ -7,9 +7,10 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-@Disabled
+
 @Autonomous (name = "earlySeasonObservationZone" , group = "Linear OpMode")
 public class earlySeasonObservationZone extends LinearOpMode {
 
@@ -41,6 +42,15 @@ public class earlySeasonObservationZone extends LinearOpMode {
     int specimenArm = -3615;
     double bufferW = 0.6;
     double bufferA = 30;
+    ElapsedTime PIDTimer = new ElapsedTime();
+    double currentTime;
+    double previousTime;
+    double AP = 0.00535;
+    double AI = 0.000002;
+    double AD = 0.5;
+    double DP = 1;
+    double DI = 0;
+    double DD = 0;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -94,6 +104,10 @@ public class earlySeasonObservationZone extends LinearOpMode {
 
         targetBlueLeft = colorLeft.blue() + 250;
         targetRedLeft = colorLeft.red() + 250;
+
+        strafeLeft(1000);
+
+        turnCC(750);
 
         distanceDrive(armZone); //drive forward away from wall
 
@@ -208,32 +222,43 @@ public class earlySeasonObservationZone extends LinearOpMode {
         double DRValue = distanceRight.getDistance(DistanceUnit.INCH);
         double DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
         double DAValue = (DRValue+DLValue)/2 - dis;
+        double previousDistanceErrorLeft = 0;
+        double previousDistanceErrorRight = 0;
 
         while(DAValue > bufferW || DAValue < - bufferW){
             //variables
-            DRValue = distanceRight.getDistance(DistanceUnit.INCH);
-            DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
-            DAValue = (DRValue+DLValue)/2 - dis;
+            double disLeft = distanceLeft.getDistance(DistanceUnit.CM);
+            double distanceErrorLeft = disLeft - dis;
 
-            if (DRValue > DLValue + 5){
+            double disRight =distanceRight.getDistance(DistanceUnit.CM);
+            double distanceErrorRight = disRight - dis;
+
+            DAValue = (disLeft + disRight)/2 - dis;
+
+            if (disRight > disLeft + 5){
                 leftFront.setPower(pow);
                 leftBack.setPower(pow);
                 rightFront.setPower(-pow);
                 rightBack.setPower(-pow);
-            } else  if (DRValue > DLValue + 5) {
+            } else  if (disLeft > disRight + 5) {
                 leftFront.setPower(-pow);
                 leftBack.setPower(-pow);
                 rightFront.setPower(pow);
                 rightBack.setPower(pow);
             } else {
-                double lp = (DLValue + 0.1 - dis) * 0.08;
-                double rp = (DRValue + 0.1 - dis) * 0.08;
+                double lp = ((distanceErrorLeft * DP) + (DI * (distanceErrorLeft * (currentTime - previousTime))) + (DD * (distanceErrorLeft - previousDistanceErrorLeft) / (currentTime - previousTime)));
+                double rp = ((distanceErrorRight * DP) + (DI * (distanceErrorRight * (currentTime - previousTime))) + (DD * (distanceErrorLeft - previousDistanceErrorRight) / (currentTime - previousTime)));
 
                 leftFront.setPower(lp);
                 leftBack.setPower(lp);
                 rightFront.setPower(rp);
                 rightBack.setPower(rp);
             }
+
+            previousDistanceErrorLeft = distanceErrorLeft;
+            previousDistanceErrorRight = distanceErrorRight;
+
+            currentTime = previousTime;
 
             telemetry.addData("distanceLeft:", distanceLeft.getDistance(DistanceUnit.INCH));
             telemetry.addData("distanceRight:", distanceRight.getDistance(DistanceUnit.INCH));
@@ -246,15 +271,20 @@ public class earlySeasonObservationZone extends LinearOpMode {
     }
 
     private void arm(int dis) {
+        double previousArmError = 0;
         while (armEncoder.getCurrentPosition() < dis - bufferA || armEncoder.getCurrentPosition() > dis + bufferA) {
+           currentTime = PIDTimer.milliseconds();
             double armPos = armEncoder.getCurrentPosition();
+            double armError = armPos - dis;
 
-            armPow = (armPos + 50 - dis) * -0.0025;
+            armPow = ((armError * AP) + (AI * (armError * (currentTime - previousTime))) + (AD * (armError - previousArmError) / (currentTime - previousTime)));
 
             armLeft.setPower(armPow);
             armRight.setPower(armPow);
 
-           telemetry.addData("arm encoder", armEncoder.getCurrentPosition());
+            previousArmError = armError;
+            previousTime = currentTime;
+            telemetry.addData("arm encoder", armEncoder.getCurrentPosition());
            telemetry.update();
         }
         armLeft.setPower(0);
