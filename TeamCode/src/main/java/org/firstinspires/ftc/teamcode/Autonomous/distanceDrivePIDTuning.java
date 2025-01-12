@@ -35,9 +35,9 @@ public class distanceDrivePIDTuning extends OpMode {
     double P;
     double I;
     double D;
-    double DP = 0.025;
+    double DP = 0.0275;
     double DI = 0;
-    double DD = 0;
+    double DD = 0.2;
 
     public void init() {
         leftBack = hardwareMap.get(DcMotor.class, "leftBack");
@@ -56,6 +56,7 @@ public class distanceDrivePIDTuning extends OpMode {
     public void loop() {
         double lefty2 = -(gamepad2.left_stick_y);
         boolean a2 = gamepad2.a;
+        boolean b2 = gamepad2.b;
 
         desDis += lefty2 / 4;
 
@@ -89,6 +90,11 @@ public class distanceDrivePIDTuning extends OpMode {
             rightFront.setPower(powRight);
             leftBack.setPower(powLeft);
             leftFront.setPower(powLeft);
+        } else if (b2) {
+            previousErrorRight = 0;
+            previousErrorLeft = 0;
+            previousTime = 0;
+            PIDTimer.reset();
         } else {
             rightBack.setPower(0);
             rightFront.setPower(0);

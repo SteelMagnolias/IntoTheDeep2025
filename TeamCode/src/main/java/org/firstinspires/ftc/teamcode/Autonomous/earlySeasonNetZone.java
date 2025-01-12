@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.Autonomous;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
@@ -34,20 +33,18 @@ public class earlySeasonNetZone extends LinearOpMode {
     double armPow = 0.6;
     int targetBlue = 2000;
     int targetRed = 2000;
-    int targetGreen = 2000;
     int targetBlueLeft = 2000;
     int targetRedLeft = 2000;
-    int targetGreenLeft = 2000;
-    int sampleArm = -3164;
-    int parkArm =  -4000;
+    int sampleArm = 3164;
+    int parkArm = 4000;
     double bufferW = 0.6;
-    double bufferA = 30;
+    double bufferA = 40;
     ElapsedTime PIDTimer = new ElapsedTime();
     double currentTime;
     double previousTime;
-    double AP = 0.00535;
-    double AI = 0.000002;
-    double AD = 0.5;
+    double AP = 0.004;
+    double AI = 0.00001;
+    double AD = 0.0001;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -64,6 +61,7 @@ public class earlySeasonNetZone extends LinearOpMode {
         leftFront.setDirection(DcMotor.Direction.REVERSE);
         rightFront.setDirection(DcMotor.Direction.REVERSE);
         armRight.setDirection(DcMotor.Direction.REVERSE);
+        intake.setDirection(CRServo.Direction.REVERSE);
 
         intake.setPower(0.5); //hold specimen in
 
@@ -81,9 +79,6 @@ public class earlySeasonNetZone extends LinearOpMode {
         //telemetry
         telemetry.addData("arm encoder", armEncoder.getCurrentPosition());
 
-        telemetry.addData("distanceLeft:", distanceLeft.getDistance(DistanceUnit.INCH));
-        telemetry.addData("distanceRight:", distanceRight.getDistance(DistanceUnit.INCH));
-
         telemetry.addData("colorLeft Red:", colorLeft.red());
         telemetry.addData("colorLeft Blue:", colorLeft.blue());
         telemetry.addData("colorLeft Green: ", colorLeft.green());
@@ -98,13 +93,11 @@ public class earlySeasonNetZone extends LinearOpMode {
 
         targetBlue = colorRight.blue() + 150;
         targetRed = colorRight.red() + 250;
-        targetGreen = colorRight.green() + 150;
 
         targetBlueLeft = colorLeft.blue() + 250;
         targetRedLeft = colorLeft.red() + 250;
-        targetGreenLeft = colorLeft.green() + 250;
 
-        strafeRight(100); // line up with bucket
+        strafeRight(250); // line up with bucket
 
         colorDrive(1); // left to net zone line
 
@@ -124,9 +117,9 @@ public class earlySeasonNetZone extends LinearOpMode {
 
         sleep(500); //wait for arm  to stop
 
-        intake(-1, 3000); // let go of sample
+        intake(-1, 1500); // let go of sample
 
-        arm(-2500); // bring arm back into robot
+        arm(2500); // bring arm back into robot
 
         turnCC(1400); //turn to face submersible
 
@@ -135,7 +128,7 @@ public class earlySeasonNetZone extends LinearOpMode {
         strafeRight(750); // straten on wall
 
         //drive left till we see white submersible line
-        while (colorLeft.red() < targetRed || colorLeft.blue() < targetBlue || colorLeft.green() < targetGreen){
+        while (colorLeft.red() < targetRed || colorLeft.blue() < targetBlue){
             leftFront.setPower(-pow);
             leftBack.setPower(pow);
             rightFront.setPower(pow);
@@ -234,52 +227,11 @@ public class earlySeasonNetZone extends LinearOpMode {
         rightBack.setPower(0);
     }
 
-    private void distanceDrive(double dis) {
-        double DRValue = distanceRight.getDistance(DistanceUnit.INCH);
-        double DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
-        double DAValue = (DRValue+DLValue)/2 - dis;
-
-        while(DAValue > bufferW || DAValue < - bufferW){
-            //variables
-            DRValue = distanceRight.getDistance(DistanceUnit.INCH);
-            DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
-            DAValue = (DRValue+DLValue)/2 - dis;
-
-            if (DRValue > DLValue + 5){
-                leftFront.setPower(pow);
-                leftBack.setPower(pow);
-                rightFront.setPower(-pow);
-                rightBack.setPower(-pow);
-            } else  if (DRValue > DLValue + 5) {
-                leftFront.setPower(-pow);
-                leftBack.setPower(-pow);
-                rightFront.setPower(pow);
-                rightBack.setPower(pow);
-            } else {
-                double lp = (DLValue + 0.1 - dis) * 0.08;
-                double rp = (DRValue + 0.1 - dis) * 0.08;
-
-                leftFront.setPower(lp);
-                leftBack.setPower(lp);
-                rightFront.setPower(rp);
-                rightBack.setPower(rp);
-            }
-
-            telemetry.addData("distanceLeft:", distanceLeft.getDistance(DistanceUnit.INCH));
-            telemetry.addData("distanceRight:", distanceRight.getDistance(DistanceUnit.INCH));
-            telemetry.update();
-        }
-        leftFront.setPower(0);
-        leftBack.setPower(0);
-        rightFront.setPower(0);
-        rightBack.setPower(0);
-    }
-
     private void arm(int dis) {
         double previousArmError = 0;
-        while (armEncoder.getCurrentPosition() < dis - bufferA || armEncoder.getCurrentPosition() > dis + bufferA) {
+        while (-armEncoder.getCurrentPosition() < dis - bufferA || -armEncoder.getCurrentPosition() > dis + bufferA) {
             currentTime = PIDTimer.milliseconds();
-            double armPos = armEncoder.getCurrentPosition();
+            double armPos = -armEncoder.getCurrentPosition();
             double armError = armPos - dis;
 
             armPow = ((armError * AP) + (AI * (armError * (currentTime - previousTime))) + (AD * (armError - previousArmError) / (currentTime - previousTime)));
@@ -289,7 +241,7 @@ public class earlySeasonNetZone extends LinearOpMode {
 
             previousArmError = armError;
             previousTime = currentTime;
-            telemetry.addData("arm encoder", armEncoder.getCurrentPosition());
+            telemetry.addData("arm encoder", -armEncoder.getCurrentPosition());
             telemetry.update();
         }
         armLeft.setPower(0);
