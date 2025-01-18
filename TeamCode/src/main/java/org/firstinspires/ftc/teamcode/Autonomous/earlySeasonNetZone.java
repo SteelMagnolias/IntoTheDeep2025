@@ -63,11 +63,13 @@ public class earlySeasonNetZone extends LinearOpMode {
         armRight.setDirection(DcMotor.Direction.REVERSE);
         intake.setDirection(CRServo.Direction.REVERSE);
 
-        intake.setPower(0.5); //hold specimen in
+        armLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        armRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         //encoder setup
         armEncoder = armLeft;
         armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        armLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         // sensors
         distanceLeft = hardwareMap.get(DistanceSensor.class, "distanceLeft");
@@ -90,6 +92,8 @@ public class earlySeasonNetZone extends LinearOpMode {
         telemetry.update();
 
         waitForStart();
+
+        intake.setPower(0.5); //hold specimen in
 
         targetBlue = colorRight.blue() + 150;
         targetRed = colorRight.red() + 250;
@@ -121,7 +125,7 @@ public class earlySeasonNetZone extends LinearOpMode {
 
         arm(2500); // bring arm back into robot
 
-        turnCC(1400); //turn to face submersible
+        turnCC(1500); //turn to face submersible
 
         driveForward(450); // line up with space
 

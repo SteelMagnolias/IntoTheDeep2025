@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.Autonomous;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
@@ -33,24 +32,24 @@ public class earlySeasonObservationZone extends LinearOpMode {
     // variables
     double pow = 0.4;
     double armPow = 0.6;
-    double specimenDistance = 16.5; //inches
+    double specimenDistance = 40; //inches
     double armZone = 20;
     int targetBlue = 2000;
     int targetRed = 2000;
     int targetBlueLeft = 2000;
     int targetRedLeft = 2000;
-    int specimenArm = -3615;
+    int specimenArm = 3164;
     double bufferW = 0.6;
     double bufferA = 30;
     ElapsedTime PIDTimer = new ElapsedTime();
     double currentTime;
     double previousTime;
-    double AP = 0.00535;
-    double AI = 0.000002;
-    double AD = 0.5;
-    double DP = 1;
+    double AP = 0.004;
+    double AI = 0.00001;
+    double AD = 0.0001;
+    double DP = 0.0275;
     double DI = 0;
-    double DD = 0;
+    double DD = 0.2;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -67,12 +66,16 @@ public class earlySeasonObservationZone extends LinearOpMode {
         leftFront.setDirection(DcMotor.Direction.REVERSE);
         rightFront.setDirection(DcMotor.Direction.REVERSE);
         armRight.setDirection(DcMotor.Direction.REVERSE);
+        intake.setDirection(CRServo.Direction.REVERSE);
 
-        intake.setPower(0.5); //hold specimen in
+        armLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        armRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         //encoder setup
         armEncoder = armLeft;
         armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        armLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
 
         // sensors
             distanceLeft = hardwareMap.get(DistanceSensor.class, "distanceLeft");
@@ -99,39 +102,38 @@ public class earlySeasonObservationZone extends LinearOpMode {
 
         waitForStart();
 
-        targetBlue = colorRight.blue() + 250;
-        targetRed = colorRight.red() + 250;
+        intake.setPower(0.5); //hold specimen in
+
+        targetBlue = colorRight.blue() + 150;
+        targetRed = colorRight.red() + 150;
 
         targetBlueLeft = colorLeft.blue() + 250;
         targetRedLeft = colorLeft.red() + 250;
 
-        strafeLeft(1000);
+        strafeRight(750);
 
-        turnCC(750);
-
-        distanceDrive(armZone); //drive forward away from wall
+        turnC(750);
 
         arm(specimenArm); // put arm in hang position
 
         sleep(500); //wait for arm momentum to stop
 
-        distanceDrive(specimenDistance); // drive to the submersible at hang distance
+        driveForward(300);// drive to the submersible and specimen auto hangs
 
-        arm(specimenArm - 650); //hook specimen on bar
+        intake.setPower(0);
 
-        sleep(500); //wait for arm momentum to stop
+        sleep(500);
 
-        intake(-1, 3000); // let go of specimen
+        driveBackwards(250);// back away so dont knock it off
 
-        distanceDrive(armZone);// drive till against wall 30 inches sub 2 for buffer
-
-        arm(-2500); //bring arm up to not get stuck
+        arm(2500); //bring arm up to not get stuck
 
         turnC(1000); //turn so color sensors can see line
 
         strafeRight(1500); // drive to wall
 
         colorDrive(1); //drive into park zone
+
     }
 
     private void driveForward(double t) {
@@ -222,29 +224,32 @@ public class earlySeasonObservationZone extends LinearOpMode {
         double DRValue = distanceRight.getDistance(DistanceUnit.INCH);
         double DLValue = distanceLeft.getDistance(DistanceUnit.INCH);
         double DAValue = (DRValue+DLValue)/2 - dis;
+        PIDTimer.reset();
         double previousDistanceErrorLeft = 0;
         double previousDistanceErrorRight = 0;
 
-        while(DAValue > bufferW || DAValue < - bufferW){
+        while(Math.abs(DAValue) > bufferW ){
             //variables
             double disLeft = distanceLeft.getDistance(DistanceUnit.CM);
-            double distanceErrorLeft = disLeft - dis;
+            double adjustedLeftDis = disLeft + 0.525556 * Math.pow(1.03381, disLeft);
+            double distanceErrorLeft = adjustedLeftDis - dis;
+            currentTime = PIDTimer.milliseconds();
 
-            double disRight =distanceRight.getDistance(DistanceUnit.CM);
+            double disRight = distanceRight.getDistance(DistanceUnit.CM);
             double distanceErrorRight = disRight - dis;
 
             DAValue = (disLeft + disRight)/2 - dis;
 
-            if (disRight > disLeft + 5){
-                leftFront.setPower(pow);
-                leftBack.setPower(pow);
-                rightFront.setPower(-pow);
-                rightBack.setPower(-pow);
-            } else  if (disLeft > disRight + 5) {
+            if (disRight > 100){
                 leftFront.setPower(-pow);
                 leftBack.setPower(-pow);
                 rightFront.setPower(pow);
                 rightBack.setPower(pow);
+            } else  if (disLeft > 100) {
+                leftFront.setPower(pow);
+                leftBack.setPower(pow);
+                rightFront.setPower(-pow);
+                rightBack.setPower(-pow);
             } else {
                 double lp = ((distanceErrorLeft * DP) + (DI * (distanceErrorLeft * (currentTime - previousTime))) + (DD * (distanceErrorLeft - previousDistanceErrorLeft) / (currentTime - previousTime)));
                 double rp = ((distanceErrorRight * DP) + (DI * (distanceErrorRight * (currentTime - previousTime))) + (DD * (distanceErrorLeft - previousDistanceErrorRight) / (currentTime - previousTime)));
@@ -261,6 +266,7 @@ public class earlySeasonObservationZone extends LinearOpMode {
             currentTime = previousTime;
 
             telemetry.addData("distanceLeft:", distanceLeft.getDistance(DistanceUnit.INCH));
+            telemetry.addData("adjustedDistanceLeft:", adjustedLeftDis);
             telemetry.addData("distanceRight:", distanceRight.getDistance(DistanceUnit.INCH));
             telemetry.update();
         }
@@ -272,9 +278,9 @@ public class earlySeasonObservationZone extends LinearOpMode {
 
     private void arm(int dis) {
         double previousArmError = 0;
-        while (armEncoder.getCurrentPosition() < dis - bufferA || armEncoder.getCurrentPosition() > dis + bufferA) {
-           currentTime = PIDTimer.milliseconds();
-            double armPos = armEncoder.getCurrentPosition();
+        while (-armEncoder.getCurrentPosition() < dis - bufferA || -armEncoder.getCurrentPosition() > dis + bufferA) {
+            currentTime = PIDTimer.milliseconds();
+            double armPos = -armEncoder.getCurrentPosition();
             double armError = armPos - dis;
 
             armPow = ((armError * AP) + (AI * (armError * (currentTime - previousTime))) + (AD * (armError - previousArmError) / (currentTime - previousTime)));
@@ -284,8 +290,8 @@ public class earlySeasonObservationZone extends LinearOpMode {
 
             previousArmError = armError;
             previousTime = currentTime;
-            telemetry.addData("arm encoder", armEncoder.getCurrentPosition());
-           telemetry.update();
+            telemetry.addData("arm encoder", -armEncoder.getCurrentPosition());
+            telemetry.update();
         }
         armLeft.setPower(0);
         armRight.setPower(0);

@@ -58,11 +58,12 @@ public class distanceDrivePIDTuning extends OpMode {
         boolean a2 = gamepad2.a;
         boolean b2 = gamepad2.b;
 
-        desDis += lefty2 / 4;
+        desDis += lefty2 / 3;
 
         //PID stuff left
         disLeft = distanceLeft.getDistance(DistanceUnit.CM);
-        currentErrorLeft = disLeft - desDis;
+        double adjustedLeftDis = disLeft + 0.525556 * Math.pow(1.03381, disLeft);
+        currentErrorLeft = adjustedLeftDis - desDis;
         currentTime = PIDTimer.milliseconds();
 
         P = currentErrorLeft * DP;
@@ -106,6 +107,7 @@ public class distanceDrivePIDTuning extends OpMode {
         telemetry.addData("powLeft", powLeft);
         telemetry.addData("desired distance", desDis);
         telemetry.addData("distance Right", disRight);
+        telemetry.addData("adjusted distance left", adjustedLeftDis);
         telemetry.addData("distance Left", disLeft);
         telemetry.update();
     }

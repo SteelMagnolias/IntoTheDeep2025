@@ -62,6 +62,8 @@ public class earlySeasonDrive extends OpMode {
 
         //encoder setup
         armEncoder = armLeft;
+
+        armLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
 
@@ -302,6 +304,7 @@ public class earlySeasonDrive extends OpMode {
         //reset encoder to zero; positions based on zero is in bot
         if (back2){
             armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER); //set encoder to zero position
+            armLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             desArmPos = armPos;
         }
 
