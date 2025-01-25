@@ -98,8 +98,8 @@ public class earlySeasonNetZone extends LinearOpMode {
         targetBlue = colorRight.blue() + 150;
         targetRed = colorRight.red() + 250;
 
-        targetBlueLeft = colorLeft.blue() + 250;
-        targetRedLeft = colorLeft.red() + 250;
+        targetBlueLeft = colorLeft.blue() + 300;
+        targetRedLeft = colorLeft.red() + 300;
 
         strafeRight(250); // line up with bucket
 

@@ -107,8 +107,8 @@ public class earlySeasonObservationZone extends LinearOpMode {
         targetBlue = colorRight.blue() + 150;
         targetRed = colorRight.red() + 150;
 
-        targetBlueLeft = colorLeft.blue() + 250;
-        targetRedLeft = colorLeft.red() + 250;
+        targetBlueLeft = colorLeft.blue() + 300;
+        targetRedLeft = colorLeft.red() + 300;
 
         strafeRight(750);
 
@@ -118,7 +118,7 @@ public class earlySeasonObservationZone extends LinearOpMode {
 
         sleep(500); //wait for arm momentum to stop
 
-        driveForward(300);// drive to the submersible and specimen auto hangs
+        driveForward(350);// drive to the submersible and specimen auto hangs
 
         intake.setPower(0);
 
