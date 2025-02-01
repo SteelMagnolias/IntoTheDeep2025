@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
+@Disabled
 @Autonomous (name = "groundScoreAuton" , group = "Linear OpMode")
 public class groundScoreAuton extends LinearOpMode {
     // declare motors and servos

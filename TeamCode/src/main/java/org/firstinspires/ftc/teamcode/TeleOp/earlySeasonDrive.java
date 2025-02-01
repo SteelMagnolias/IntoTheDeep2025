@@ -16,14 +16,18 @@ public class earlySeasonDrive extends OpMode {
     private DcMotor armLeft;
     private DcMotor armRight;
     private DcMotor armEncoder;
+    private DcMotor armSlide;
+    private DcMotor slideEncoder;
     private CRServo intake;
 
     // variables
     double pow;
     double armPow;
+    double slidePow;
     double theta; //angle of wheels joystick
     double desArmPos;
     double armPos;
+    double slidePos;
     double currentTime;
     double previousTime;
     double currentError;
@@ -49,6 +53,7 @@ public class earlySeasonDrive extends OpMode {
         rightFront = hardwareMap.get(DcMotor.class, "rightFront");
         armLeft = hardwareMap.get(DcMotor.class, "armLeft");
         armRight = hardwareMap.get(DcMotor.class, "armRight");
+        armSlide = hardwareMap.get(DcMotor.class, "armSlide");
         intake = hardwareMap.get(CRServo.class, "intake");
 
         //reverse motors
@@ -59,11 +64,14 @@ public class earlySeasonDrive extends OpMode {
 
         armLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         armRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        armSlide.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         //encoder setup
         armEncoder = armLeft;
+        slideEncoder = armSlide;
 
         armLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        armSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
 
@@ -304,7 +312,9 @@ public class earlySeasonDrive extends OpMode {
         //reset encoder to zero; positions based on zero is in bot
         if (back2){
             armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER); //set encoder to zero position
+            slideEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             armLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            armSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             desArmPos = armPos;
         }
 
@@ -362,6 +372,23 @@ public class earlySeasonDrive extends OpMode {
         telemetry.addData("arm right", armRight.getPower());
         telemetry.addData("arm power", armPow);
         telemetry.addData("error", currentError);
+
+        slidePow = 0.9;
+        if(1 == -1){ // change this and dont forget you dumbass veronica
+            armSlide.setPower(-0.05);
+        } else if (Math.abs(righty2) > 0.1){
+            armSlide.setPower(righty2*slidePow);
+        } else if (buttonRight2){
+            slidePow = 0.3;
+            armSlide.setPower(slidePow);
+        } else if (buttonLeft2) {
+            slidePow = 0.3;
+            armSlide.setPower(-slidePow);
+        } else {
+            armSlide.setPower(0);
+        }
+
+        telemetry.addData("linear slide position", slideEncoder.getCurrentPosition());
 
         // intake code
         if (lb2){
