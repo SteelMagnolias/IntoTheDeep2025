@@ -45,8 +45,9 @@ public class lateSeasonObservationZone extends OpMode {
     double currentTime;
     double previousTime;
 
-    int stepW = 1;
+    int stepW = 0;
     int stepA = 1;
+    int stepRepeat = 1;
 
     double pow = 0.5;
     double armPow = 0.9;
@@ -142,7 +143,7 @@ public class lateSeasonObservationZone extends OpMode {
     double trackWidthDelta = 0;
     double yOffsetDelta = 0;
 
-    //locations
+    //locations odometry
     // lines X - lowercase v, w, x, y, z
     // lines Y - uppercase I, II, III, IV, V
     // spaces X - lowercase a, b, c, d, e, f
@@ -156,7 +157,12 @@ public class lateSeasonObservationZone extends OpMode {
     double[] dVr90 = {0, 0, 90};
     double[] zVr90 = {0, 0, 90};
     double[] d6r90 = {0, 0, 90};
-    double[] z6r90 = {0, 0, 90};
+    double[] f6r90 = {0, 0, 90};
+    //locations other
+    double hangDistance = 0;
+    double hangAngle = 0;
+    double wallPickup = 0;
+    double resetArm = 0;
 
     public void init() {
         //motors and servos
@@ -222,14 +228,19 @@ public class lateSeasonObservationZone extends OpMode {
         runOdometry();
 
         switch (stepW) {
-            case 1:
+            case 0:
                 targetBlueLeft = colorLeft.blue();
                 targetRedLeft = colorLeft.red();
 
                 targetBlueRight = colorRight.blue();
                 targetRedRight = colorRight.red();
 
+                intake.setPower(0.25);
                 stepW++;
+                break;
+            case 1:
+                stepW++;
+                stepA = 2;
                 break;
 
             case 2:
@@ -238,25 +249,139 @@ public class lateSeasonObservationZone extends OpMode {
 
                 if (Math.abs(x) < bufferO && Math.abs(y) < bufferO && Math.abs(angle) < bufferOT){
                     stepW++;
+                    drive(0, 0, 0, 0);
+                }
+                break;
+
+            case 3:
+                desDis = hangDistance;
+                distanceDrive();
+
+                if (Math.abs(distanceErrorLeft) < bufferD && Math.abs(distanceErrorRight) < bufferD){
+                    if(stepRepeat == 1) {
+                        stepW++;
+                        stepA = 3;
+                        intake.setPower(-1);
+                    } else {
+                        stepW = 5;
+                        stepA = 4;
+                    }
+                    drive(0, 0, 0, 0);
+                }
+                break;
+
+            case 4:
+                desPos = f6r270;
+                odometryDrive();
+
+                if (Math.abs(x) < bufferO && Math.abs(y) < bufferO && Math.abs(angle) < bufferOT){
+                    stepA = 5;
+                    intakeTimer.reset();
+                    stepRepeat++;
+                    drive(0, 0, 0, 0);
+                }
+                break;
+
+            case 5:
+                desPos = e5r90;
+                odometryDrive();
+
+                if (Math.abs(x) < bufferO && Math.abs(y) < bufferO && Math.abs(angle) < bufferOT){
+                    stepW++;
+                    drive(0, 0, 0, 0);
+                }
+                break;
+
+            case 6:
+                desPos = dVr90;
+                odometryDrive();
+
+                if (Math.abs(x) < bufferO && Math.abs(y) < bufferO && Math.abs(angle) < bufferOT){
+                    if (stepRepeat == 2) {
+                        stepW++;
+                    } else {
+                        stepW = 8;
+                    }
+                    drive(0, 0, 0, 0);
+                }
+                break;
+
+            case 7:
+                desPos = zVr90;
+                odometryDrive();
+
+                if (Math.abs(x) < bufferO && Math.abs(y) < bufferO && Math.abs(angle) < bufferOT) {
+                    stepW = 6;
+                    stepRepeat = 3;
+                    drive(0, 0, 0, 0);
+                }
+                break;
+
+            case 8:
+                desPos = d6r90;
+                if (Math.abs(x) < bufferO && Math.abs(y) < bufferO && Math.abs(angle) < bufferOT) {
+                    stepW++;
+                    drive(0, 0, 0, 0);
+                }
+                break;
+
+            case 9:
+                desPos = f6r90;
+                if (Math.abs(x) < bufferO && Math.abs(y) < bufferO && Math.abs(angle) < bufferOT){
+                    stepW++;
+                    drive(0, 0, 0, 0);
                 }
                 break;
 
             default:
-
                 drive(0, 0, 0, 0);
-
                 break;
         }
 
         switch (stepA) {
             case 1:
+                arm_slide(0, 0);
+                break;
 
+            case 2:
+                desArmPos = hangAngle;
+                arm();
+                intake.setPower(0);
+
+                if(armError < bufferA){
+                    stepA = 1;
+                }
+                break;
+
+            case 3:
+                desArmPos =  wallPickup;
+                arm();
+
+                if(armError < bufferA){
+                    stepA = 1;
+                    stepW = 1;
+                }
+                break;
+
+            case 4:
+                desArmPos = resetArm;
+                arm();
+
+                if(armError < bufferA){
+                    stepA = 1;
+                }
+                break;
+
+            case 5:
+                intake.setPower(1);
+                if(intakeTimer.milliseconds() > 1000) {
+                    stepW = 1;
+                    intake.setPower(0.25);
+                }
                 break;
 
             default:
-
-                arm(0, 0);
-
+                arm_slide(0, 0);
                 break;
         }
 
@@ -323,7 +448,7 @@ public class lateSeasonObservationZone extends OpMode {
         rightBack.setPower(dbr);
     }
 
-    private void arm(double ap, double alp) {
+    private void arm_slide (double ap, double alp) {
         armLeft.setPower(ap);
         armRight.setPower(ap);
         armSlide.setPower(alp);

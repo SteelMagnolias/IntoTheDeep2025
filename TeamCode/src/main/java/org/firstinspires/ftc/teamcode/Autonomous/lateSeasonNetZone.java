@@ -45,10 +45,12 @@ public class lateSeasonNetZone extends OpMode {
     double currentTime;
     double previousTime;
 
-    int stepW = 1;
+    int stepW = 0;
     int stepA = 1;
+    int stepRepeat = 1;
 
     double pow = 0.5;
+    double colorPow = 0.3;
     double armPow = 0.9;
     double slidePow = 0.9;
 
@@ -102,6 +104,7 @@ public class lateSeasonNetZone extends OpMode {
     double countsPerRotation = 8192;
 
     double[] pose = {0, 0, Math.toRadians(0)};
+    double[] desPos = {0, 0, 0};
 
     double previousLeftEncoderPosition = 0;
     double previousRightEncoderPosition = 0;
@@ -140,6 +143,25 @@ public class lateSeasonNetZone extends OpMode {
 
     double trackWidthDelta = 0;
     double yOffsetDelta = 0;
+
+    //locations
+    // lines X - lowercase v, w, x, y, z
+    // lines Y - uppercase I, II, III, IV, V
+    // spaces X - lowercase a, b, c, d, e, f
+    // spaces Y - 1, 2, 3, 4, 5, 6;
+    // rotation is in degrees 0 is facing the audience wall
+    // rotation - r0, r90, r180, r270
+    // rotation - n means negative
+    double[] f2r0 = {0, 0, 0};
+    double[] z2r0 = {0, 0, 0};
+    double[] f1rn45 = {0, 0, -45};
+    double[] zIr90 = {0, 0, 90};
+    double[] eIr90 = {0, 0, 90};
+    double[] dIIr180 = {0, 0, 180};
+
+    // other locations
+    double SM1 = 0;
+    double SM2 = 0;
 
     public void init() {
         //motors and servos
@@ -202,17 +224,105 @@ public class lateSeasonNetZone extends OpMode {
     public void loop() {
 
         currentTime = PIDTimer.milliseconds();
+        runOdometry();
 
         switch (stepW) {
-            case 1:
+            case 0:
+                targetBlueLeft = colorLeft.blue();
+                targetRedLeft = colorLeft.red();
 
+                targetBlueRight = colorRight.blue();
+                targetRedRight = colorRight.red();
 
+                intake.setPower(0.25);
+                stepW++;
+                break;
+
+            case 2:
+                desPos = z2r0;
+                odometryDrive();
+
+                if (Math.abs(x) > bufferO && Math.abs(y) > bufferO && Math.abs(angle) > bufferOT){
+                    stepW++;
+                    drive(0, 0, 0, 0);
+                }
+                break;
+
+            case 3:
+                drive(colorPow, colorPow, colorPow, colorPow);
+                if(colorLeft.blue() > targetBlueLeft || colorLeft.red() < targetRedLeft){
+                    stepW++;
+                    drive(0, 0, 0, 0);
+                }
+                break;
+
+            case 4:
+                drive(-colorPow, -colorPow, colorPow, colorPow);
+                if (colorRight.blue() > targetBlueLeft || colorRight.red() < targetRedRight){
+                    stepW++;
+                    drive(0, 0, 0, 0);
+                }
+                break;
+
+            case 5:
+                desPos = f1rn45;
+                odometryDrive();
+
+                if(Math.abs(x) < bufferO && Math.abs(y) < bufferO && Math.abs(angle) < bufferOT){
+                    if (stepRepeat == 3){
+                        stepW = 9;
+                    }else {
+                        stepW++;
+                    }
+                    drive(0, 0, 0, 0);
+                }
+                break;
+
+            case 6:
+                desPos = zIr90;
+                odometryDrive();
+
+                if(Math.abs(x) < bufferO && Math.abs(y) < bufferO && Math.abs(angle) < bufferOT){
+                    stepW++;
+                    drive(0, 0, 0, 0);
+                }
+                break;
+
+            case 7:
+               if (stepRepeat == 1) {
+                   desDis = SM1;
+               } else {
+                   desDis = SM2;
+               }
+                distanceStrafe();
+                if (Math.abs(distanceErrorSide) < bufferD){
+                    stepW++;
+                    drive(0, 0, 0, 0);
+                }
+                break;
+
+            case 8:
+                desPos = eIr90;
+                odometryDrive();
+
+                if(Math.abs(x) < bufferO && Math.abs(y) < bufferO && Math.abs(angle) < bufferOT){
+                    stepW = 2;
+                    stepRepeat++;
+                    drive(0, 0, 0, 0);
+                }
+                break;
+
+            case 9:
+                desPos = dIIr180;
+                odometryDrive();
+                if (Math.abs(x) < bufferO && Math.abs(y) < bufferO && Math.abs(angle) < bufferOT){
+                    // add stepA
+                    drive(0, 0, 0, 0);
+                }
                 break;
 
             default:
-
                 drive(0, 0, 0, 0);
-
                 break;
         }
 
@@ -335,12 +445,12 @@ public class lateSeasonNetZone extends OpMode {
         previousBackEncoderPosition = backEncoderRawValue;
     }
 
-    private void odometryDrive(double desX, double desY, double desRobotAngle) {
+    private void odometryDrive() {
         pow = 0.5;
 
-        x = desX - pose[0];
-        y = desY - pose[1];
-        angle = desRobotAngle - Math.toDegrees(pose[2]);
+        x = desPos [0] - pose[0];
+        y = desPos [1] - pose[1];
+        angle = desPos[2] - Math.toDegrees(pose[2]);
 
 
         double c = Math.hypot(x, y); // find length of hypot using tan of triangle made by x and y
