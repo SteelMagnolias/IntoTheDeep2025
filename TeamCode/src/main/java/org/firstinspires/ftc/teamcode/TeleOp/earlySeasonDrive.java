@@ -25,7 +25,7 @@ public class earlySeasonDrive extends OpMode {
     double armPow;
     double slidePow;
     double theta; //angle of wheels joystick
-    double desArmPos;
+    double desSlidePos;
     double armPos;
     double slidePos;
     double currentTime;
@@ -35,9 +35,9 @@ public class earlySeasonDrive extends OpMode {
     double P;
     double I;
     double D;
-    double KP = 0.004;
-    double KI = 0.00001;
-    double KD = 0.0001;
+    double KP = 0;
+    double KI = 0;
+    double KD = 0;
 
 
 
@@ -57,9 +57,8 @@ public class earlySeasonDrive extends OpMode {
         intake = hardwareMap.get(CRServo.class, "intake");
 
         //reverse motors
-        leftFront.setDirection(DcMotor.Direction.REVERSE);
-        rightFront.setDirection(DcMotor.Direction.REVERSE);
-        armRight.setDirection(DcMotor.Direction.REVERSE);
+        rightBack.setDirection(DcMotor.Direction.REVERSE);
+        armSlide.setDirection(DcMotor.Direction.REVERSE);
         intake.setDirection(DcMotor.Direction.REVERSE);
 
         armLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -69,6 +68,9 @@ public class earlySeasonDrive extends OpMode {
         //encoder setup
         armEncoder = armLeft;
         slideEncoder = armSlide;
+
+        armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        slideEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         armLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         armSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -148,7 +150,7 @@ public class earlySeasonDrive extends OpMode {
 
         //wheels code
         if (a1) pow = 1; // turbo mode
-        else pow =0.8; // regular speed
+        else pow = 0.8; // regular speed
         double c = Math.hypot(leftx1, lefty1); // find length of hypot using tan of triangle made by x and y
         double perct = pow * c; // scale by max power
         if (c <= .1) {
@@ -197,7 +199,8 @@ public class earlySeasonDrive extends OpMode {
         if (bl > 1) bl = 1; // cap speeds at 1 and -1
         if (bl < -1) bl = -1;
         bl = (perct * bl); // scale by power
-        if (leftx1 < .1 && leftx1 > -.1 && lefty1 < .1 && lefty1 > -.1) bl = 0; // if no joystick movement, stop wheel
+        if (leftx1 < .1 && leftx1 > -.1 && lefty1 < .1 && lefty1 > -.1)
+            bl = 0; // if no joystick movement, stop wheel
 
 
         // calculate power of front left wheel, wheels move on 45 degree angles, find the ratio between where we are and where we should be
@@ -205,7 +208,8 @@ public class earlySeasonDrive extends OpMode {
         if (fl > 1) fl = 1; // cap powers at 1 and -1
         if (fl < -1) fl = -1;
         fl = (perct * fl); // scale by power
-        if (leftx1 < .1 && leftx1 > -.1 && lefty1 < .1 && lefty1 > -.1) fl = 0; // if no joystick movement, stop wheel
+        if (leftx1 < .1 && leftx1 > -.1 && lefty1 < .1 && lefty1 > -.1)
+            fl = 0; // if no joystick movement, stop wheel
 
 
         // calculate power of back right wheel, wheels move on 45 degree angles, find the ratio between where we are and where we should be
@@ -213,7 +217,8 @@ public class earlySeasonDrive extends OpMode {
         if (br > 1) br = 1; // cap powers at 1 and -1
         if (br < -1) br = -1;
         br = (perct * br); // scale by power
-        if (leftx1 < .1 && leftx1 > -.1 && lefty1 < .1 && lefty1 > -.1) br = 0; // if no joystick movement, stop
+        if (leftx1 < .1 && leftx1 > -.1 && lefty1 < .1 && lefty1 > -.1)
+            br = 0; // if no joystick movement, stop
 
 
         // add power for each wheel
@@ -227,8 +232,6 @@ public class earlySeasonDrive extends OpMode {
         telemetry.addData("rrf", dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4)));
         telemetry.addData("rbl", dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4)));
         telemetry.addData("rbr", -dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4)));
-
-
 
 
         // set power of wheels and apply any rotation
@@ -264,39 +267,38 @@ public class earlySeasonDrive extends OpMode {
             leftBack.setPower(pow);
             rightFront.setPower(pow);
             rightBack.setPower(-pow);
-        } else if (rb1){
+        } else if (rb1) {
             // rotate slowly right (clockwise)
             leftFront.setPower(pow);
             leftBack.setPower(pow);
             rightFront.setPower(-pow);
             rightBack.setPower(-pow);
-        }
-        else if (lb1) {
+        } else if (lb1) {
             // rotate slowly left (counter-clockwise)
             leftFront.setPower(-pow);
             leftBack.setPower(-pow);
             rightFront.setPower(pow);
             rightBack.setPower(pow);
-        } else if (b1){
+        } else if (b1) {
             shakeTimer.reset();
-        } else if (shakeTimer.milliseconds() < 125 || shakeTimer.milliseconds() > 250 && shakeTimer.milliseconds() < 375){
+        } else if (shakeTimer.milliseconds() < 125 || shakeTimer.milliseconds() > 250 && shakeTimer.milliseconds() < 375) {
             leftFront.setPower(-pow);
             leftBack.setPower(pow);
             rightFront.setPower(pow);
             rightBack.setPower(-pow);
-        } else if (shakeTimer.milliseconds() > 125 && shakeTimer.milliseconds() < 250 || shakeTimer.milliseconds() > 375 && shakeTimer.milliseconds() < 500){
+        } else if (shakeTimer.milliseconds() > 125 && shakeTimer.milliseconds() < 250 || shakeTimer.milliseconds() > 375 && shakeTimer.milliseconds() < 500) {
             leftFront.setPower(pow);
             leftBack.setPower(-pow);
             rightFront.setPower(-pow);
             rightBack.setPower(pow);
-        }else if (x1){
+        } else if (x1) {
             shakeTimer2.reset();
-        } else if (shakeTimer2.milliseconds() < 125 || shakeTimer2.milliseconds() > 250 && shakeTimer2.milliseconds() < 375){
+        } else if (shakeTimer2.milliseconds() < 125 || shakeTimer2.milliseconds() > 250 && shakeTimer2.milliseconds() < 375) {
             leftFront.setPower(-pow);
             leftBack.setPower(-pow);
             rightFront.setPower(pow);
             rightBack.setPower(pow);
-        } else if (shakeTimer2.milliseconds() > 125 && shakeTimer2.milliseconds() < 250 || shakeTimer2.milliseconds() > 375 && shakeTimer2.milliseconds() < 500){
+        } else if (shakeTimer2.milliseconds() > 125 && shakeTimer2.milliseconds() < 250 || shakeTimer2.milliseconds() > 375 && shakeTimer2.milliseconds() < 500) {
             leftFront.setPower(pow);
             leftBack.setPower(pow);
             rightFront.setPower(-pow);
@@ -305,90 +307,79 @@ public class earlySeasonDrive extends OpMode {
 
 
         // Arm code
-        telemetry.addData("arm encoder", armPos);
-        if(a2) armPow = 1;
-        else armPow = 0.9;
-
         //reset encoder to zero; positions based on zero is in bot
-        if (back2){
+        if (back2) {
             armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER); //set encoder to zero position
             slideEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             armLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             armSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            desArmPos = armPos;
         }
 
+        //arm moving stuff
+        if (Math.abs(lefty2) >= .1) { //joystick
+            armPow = lefty2 * 0.9;
+        } else if (buttonUp2) { //manual slow
+            armPow = 0.3;
+        } else if (buttonDown2) { //manual slow
+            armPow = -0.3;
+        } else { // turn off
+            armPow = 0;
+        }
+
+        armLeft.setPower(armPow);
+        armRight.setPower(armPow);
+
+        armPos = armEncoder.getCurrentPosition();
+        telemetry.addData("arm encoder", armPos);
+
         //set where we want to be
-        if(a2){
+        if (a2) {
             //stop
-            desArmPos = 0;
-        } else if (b2){
-            desArmPos = 500; //wall
-        }else if (y2){
-            desArmPos = 3164; //basket
-        } else if (x2){
-            desArmPos = 3775; //bar
+            desSlidePos = 0;
+        } else if (b2) {
+            desSlidePos = 500; //wall
+        } else if (y2) {
+            desSlidePos = 3164; //basket
+        } else if (x2) {
+            desSlidePos = 3775; //bar
         }
 
         //PID stuff
-        armPos = -armEncoder.getCurrentPosition();
-        currentError = armPos - desArmPos;
+        slidePos = -slideEncoder.getCurrentPosition();
+        currentError = slidePos - desSlidePos;
         currentTime = armTimer.milliseconds();
 
         P = currentError * KP;
         I = KI * (currentError * (currentTime - previousTime));
         D = KD * (currentError - previousError) / (currentTime - previousTime);
-        armPow = (P + I + D);
+        slidePow = (P + I + D);
 
         previousTime = currentTime;
         previousError = currentError;
 
-        //arm moving stuff
-        if (Math.abs(lefty2) >= .1 ) { //joystick
-            armPow = 0.9;
-            armLeft.setPower(lefty2*armPow);
-            armRight.setPower(lefty2*armPow);
-            desArmPos = 0;
-        } else if (buttonUp2){ //manual slow
-            armPow = 0.3;
-            armLeft.setPower(armPow);
-            armRight.setPower(armPow);
-            desArmPos = 0;
-        } else if (buttonDown2){ //manual slow
-            armPow = 0.3;
-            armLeft.setPower(-armPow);
-            armRight.setPower(-armPow);
-            desArmPos = 0;
-        } else if (desArmPos != 0 && Math.abs(currentError) > 30) { // encoder
-            armRight.setPower(armPow);
-            armLeft.setPower(armPow);
-        } else { // turn off
-            armLeft.setPower(0);
-            armRight.setPower(0);
+        if (armPos < 1600 && slidePos < 50) {
+            slidePow = 0;
+        }else if (armPos < 1600){
+            slidePow = -0.9;
+        } else if (righty2 > 0.1 && slidePos < 6500){
+            slidePow = 0.4 * righty2;
+        } else if (righty2 < -0.1 && slidePos > 50){
+            slidePow = 0.4 * righty2;
+        } else if (buttonRight2 && slidePos < 6500){
+            slidePow = 0.3;
+        } else if (buttonLeft2 && slidePos > 50) {
+            slidePow = -0.3;
+        } else if (desSlidePos != 0) {
+            slidePow = 0;
         }
 
-        telemetry.addData("Desired Arm Position", desArmPos);
-        telemetry.addData("arm Left", armLeft.getPower());
-        telemetry.addData("arm right", armRight.getPower());
-        telemetry.addData("arm power", armPow);
+        armSlide.setPower(slidePow);
+
+        telemetry.addData("linear slide", armSlide.getPower());
+        telemetry.addData("slide power", slidePow);
         telemetry.addData("error", currentError);
+        telemetry.addData("linear slide position", slidePos);
 
-        slidePow = 0.9;
-        if(1 == -1){ // change this and dont forget you dumbass veronica
-            armSlide.setPower(-0.05);
-        } else if (Math.abs(righty2) > 0.1){
-            armSlide.setPower(righty2*slidePow);
-        } else if (buttonRight2){
-            slidePow = 0.3;
-            armSlide.setPower(slidePow);
-        } else if (buttonLeft2) {
-            slidePow = 0.3;
-            armSlide.setPower(-slidePow);
-        } else {
-            armSlide.setPower(0);
-        }
-
-        telemetry.addData("linear slide position", slideEncoder.getCurrentPosition());
 
         // intake code
         if (lb2){
@@ -398,6 +389,7 @@ public class earlySeasonDrive extends OpMode {
         } else{
             intake.setPower(0);
         }
+
 
         // emergency stop
         if (b1 && y1) {
