@@ -337,11 +337,11 @@ public class earlySeasonDrive extends OpMode {
             //stop
             desSlidePos = 0;
         } else if (b2) {
-            desSlidePos = 500; //wall
+            desSlidePos = 0; //wall
         } else if (y2) {
-            desSlidePos = 3164; //basket
+            desSlidePos = 0; //bar
         } else if (x2) {
-            desSlidePos = 3775; //bar
+            desSlidePos = 0; //ground pickup
         }
 
         //PID stuff

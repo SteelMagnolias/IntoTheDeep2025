@@ -23,9 +23,9 @@ public class linearSlidesPIDTuning extends OpMode {
     double P;
     double I;
     double D;
-    double SP = 0.00535;
-    double SI = 0.000002;
-    double SD = 0.5;
+    double SP = 0;
+    double SI = 0;
+    double SD = 0;
 
     public void init() {
         linearSlidesLeft = hardwareMap.get(DcMotor.class, "linearSlidesLeft");
@@ -40,24 +40,32 @@ public class linearSlidesPIDTuning extends OpMode {
     public void loop() {
         double lefty2 = -(gamepad2.left_stick_y); // this is the value of gamepad2's left joystick y value
         boolean a2 = gamepad2.a; // this is the value of the a button on gamepad2
+        boolean b2 = gamepad2.b;
 
         desLength += lefty2 * 3;
 
+        //PID stuff
+        ArmLength = -armEncoder.getCurrentPosition();
+        currentError = ArmLength - desLength;
+        currentTime = armTimer.milliseconds();
+
+        P = currentError * SP;
+        I = SI * (currentError * (currentTime - previousTime));
+        D = SD * (currentError - previousError) / (currentTime - previousTime);
+        linearSlidesPow = (P + I + D);
+
+        previousTime = currentTime;
+        previousError = currentError;
+
+
         if(a2) {
-            //PID stuff
-            ArmLength = -armEncoder.getCurrentPosition();
-            currentError = ArmLength - desLength;
-            currentTime = armTimer.milliseconds();
-
-            P = currentError * SP;
-            I = SI * (currentError * (currentTime - previousTime));
-            D = SD * (currentError - previousError) / (currentTime - previousTime);
-            linearSlidesPow = (P + I + D);
-
-            previousTime = currentTime;
-            previousError = currentError;
-
             linearSlidesLeft.setPower(linearSlidesPow);
+        } else if (b2) {
+            previousError = 0;
+            previousTime = 0;
+            armTimer.reset();
+        } else {
+            linearSlidesLeft.setPower(0);
         }
 
         telemetry.addData("linearSlidesPow", linearSlidesPow);
