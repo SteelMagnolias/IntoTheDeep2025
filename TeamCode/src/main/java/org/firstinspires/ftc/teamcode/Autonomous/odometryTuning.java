@@ -5,6 +5,8 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+
 @Autonomous(name = "odometryTuning", group = "Iterative OpMode")
 public class odometryTuning extends OpMode {
 
@@ -21,28 +23,29 @@ public class odometryTuning extends OpMode {
 
 
     //stagnant variables
-    int step = 1;
+    int step = 0;
     ElapsedTime odometryTimer = new ElapsedTime();
+    ElapsedTime stepTimer = new ElapsedTime();
     double currentTime;
     double oP;
     double oI;
     double oD;
+    double anglePow = 0;
+    double desAngle = 0;
     double previousTime;
     double previousError;
-    double x;
-    double y;
     double angle;
 
     //bot information
-    double trackWidth = 20; //centimeters
-    double yOffset = -13.5; //centimeters
-    double leftWheelDiameter = 3.469; //centimeters
-    double rightWheelDiameter = 3.315; //centimeters
-    double backWheelDiameter = 3.471; //centimeters
+    double trackWidth = 36.75; //centimeters
+    double yOffset = 3.75; //centimeters
+    double leftWheelDiameter = 4.732; //centimeters
+    double rightWheelDiameter = 4.729; //centimeters
+    double backWheelDiameter = 4.752; //centimeters
     double leftWheelCircumference = Math.PI * leftWheelDiameter;
     double rightWheelCircumference = Math.PI * rightWheelDiameter;
     double backWheelCircumference = Math.PI * backWheelDiameter;
-    double countsPerRotation = 8192;
+    double countsPerRotation = 2000;
 
     double[] pose = {0, 0, Math.toRadians(0)};
 
@@ -53,12 +56,10 @@ public class odometryTuning extends OpMode {
     //other variables
     double pow = 0.4;
     double trackWidthDelta = 0; //for tuning
-    double yOffsetDelta = 0; //for tuning
-    double bufferO = 1;
-    double bufferOT = 3;
-    double Op = 1;
-    double Oi = 0;
-    double Od = 0;
+    double yOffsetDelta = -1; //for tuning
+    double Op = 0.07;
+    double Oi = 0.0005;
+    double Od = 0.5;
 
     public void init () {
         //motors
@@ -69,12 +70,11 @@ public class odometryTuning extends OpMode {
 
         //reverse motors
         rightBack.setDirection(DcMotor.Direction.REVERSE);
-        rightFront.setDirection(DcMotor.Direction.REVERSE);
 
         //reset encoders
         rightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        leftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        leftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         //set wheels to run seperate from the encoders
         leftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -88,7 +88,7 @@ public class odometryTuning extends OpMode {
         rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         //connect encoders to the ports
-        leftEncoder = leftFront;
+        leftEncoder = leftBack;
         rightEncoder = rightFront;
         backEncoder = rightBack;
 
@@ -97,80 +97,132 @@ public class odometryTuning extends OpMode {
         previousRightEncoderPosition = rightEncoder.getCurrentPosition();
         previousBackEncoderPosition = backEncoder.getCurrentPosition();
     }
+
     public void loop(){
+        boolean a2 = gamepad2.a;
 
         runOdometry();
+        robotAnglePID();
+        telemetry();
+
+        if(a2 && stepTimer.milliseconds() > 1000){
+            step++;
+            stepTimer.reset();
+        }
 
         switch (step) {
             case 1:
-                odometryDrive(10, 0, 0);
-                conditionalStep();
-                break;
-            case 2:
-                odometryDrive(10, 10, 0);
-                conditionalStep();
+                driveForward(pow);
+                if (pose[0] >= 40) {
+                    drive(0,0,0,0);
+                    step++;
+                }
                 break;
             case 3:
-                odometryDrive(-10, 10, 0);
-                conditionalStep();
-                break;
-            case 4:
-                odometryDrive(-10, -10, 0);
-                conditionalStep();
+                driveBackwards(pow);
+                if (pose[0] <= 0) {
+                    drive(0,0,0,0);
+                    step++;
+                }
                 break;
             case 5:
-                odometryDrive(0, 0, 0);
-                conditionalStep();
-                break;
-            case 6:
-                odometryDrive(0, 0, 90);
-                conditionalStep();
+                strafeLeft(pow);
+                if (pose[1] >= 40) {
+                    drive(0,0,0,0);
+                    step++;
+                }
                 break;
             case 7:
-                odometryDrive(0, 0, -90);
-                conditionalStep();
-                break;
-            case 8:
-                odometryDrive(0, 0, 0);
-                conditionalStep();
+                strafeRight(pow);
+                if (pose[1] <= 0) {
+                    drive(0,0,0,0);
+                    step++;
+                }
                 break;
             case 9:
-                odometryDrive(-10, 5, 180);
-                conditionalStep();
+                clockwise();
+                desAngle = 360;
+                if (pose[2] >= Math.toRadians(desAngle)) {
+                    drive(0,0,0,0);
+                    step++;
+                }
                 break;
-            case 10:
-                odometryDrive(0, 0, 0);
-                conditionalStep();
+            case 11:
+                counterClockwise();
+                desAngle = 0;
+                if (pose[2] <= Math.toRadians(desAngle)) {
+                    drive(0,0,0,0);
+                    step++;
+                }
                 break;
             default:
                 drive(0, 0, 0, 0);
                 stop();
         }
     }
+    private void telemetry (){
+        telemetry.addLine("Motor Powers");
 
+        telemetry.addLine();
+
+        telemetry.addData("Right Front Power: ", rightFront.getPower());
+        telemetry.addData("Right Back Power: ", rightBack.getPower());
+        telemetry.addData("Left Front Power: ", leftFront.getPower());
+        telemetry.addData("Left Back Power: ", leftBack.getPower());
+
+        telemetry.addLine();
+
+        telemetry.addLine("Variables and Sensors");
+
+        telemetry.addLine();
+
+        telemetry.addData("Step", step);
+
+        telemetry.addLine();
+
+        telemetry.addData("Odometry X: ", pose [0]);
+        telemetry.addData("Odometry Y: ", pose [1]);
+        telemetry.addData("Odometry Rotation: ", Math.toDegrees(pose [2]));
+
+        telemetry.update();
+    }
     private void runOdometry() {
         //odometry math
         //current encoder ticks
         double leftEncoderRawValue = leftEncoder.getCurrentPosition();
-        double rightEncoderRawValue = rightEncoder.getCurrentPosition();
-        double backEncoderRawValue = backEncoder.getCurrentPosition();
+        double rightEncoderRawValue = -rightEncoder.getCurrentPosition();
+        double backEncoderRawValue = -backEncoder.getCurrentPosition();
+
+        telemetry.addData("leftEncoderRawValue", leftEncoderRawValue);
+        telemetry.addData("rightEncoderRawValue", rightEncoderRawValue);
+        telemetry.addData("backEncoderRawValue", backEncoderRawValue);
 
         //calculate the change from previous position to current encoder position and convert to centimeters
         double leftEncoderChange = ((leftEncoderRawValue - previousLeftEncoderPosition) / countsPerRotation) * leftWheelCircumference;
         double rightEncoderChange = ((rightEncoderRawValue - previousRightEncoderPosition) / countsPerRotation) * rightWheelCircumference;
         double backEncoderChange = ((backEncoderRawValue - previousBackEncoderPosition) / countsPerRotation) * backWheelCircumference;
 
+        telemetry.addData("leftEncoderChange", leftEncoderChange);
+        telemetry.addData("rightEncoderChange", rightEncoderChange);
+        telemetry.addData("backEncoderChange", backEncoderChange);
+
         //find the change in robot angle by averageing both sides using subtraction due to opposite angles and then multiply by the radius to turn it into an angle
         double robotAngle = (leftEncoderChange - rightEncoderChange) / (trackWidth + trackWidthDelta);
+
+        telemetry.addData("robotAngle", robotAngle);
 
         //find the change in x center by averaging the left and right encoder values
         double xCenter = (leftEncoderChange + rightEncoderChange) / 2;
 
+        telemetry.addData("xCenter", xCenter);
+
         //find the change in x perpendicular by multiplying y offset by the robot angle and subtracting it from the back encoder
         double xPerpendicular = backEncoderChange - ((yOffset + yOffsetDelta) * robotAngle);
 
+        telemetry.addData("xPerpendicular", xPerpendicular);
+
         //relate the change in x center to our position on the field using trig
-        double xChange = xCenter * Math.cos(pose[2]) - xPerpendicular * Math.sin(pose[2]);
+        double xChange =  xCenter * Math.cos(pose[2]) - xPerpendicular * Math.sin(pose[2]);
 
         //relate the change in x perpendicular to our position on the field using trig
         double yChange = xCenter * Math.sin(pose[2]) + xPerpendicular * Math.cos(pose[2]);
@@ -184,138 +236,72 @@ public class odometryTuning extends OpMode {
         previousLeftEncoderPosition = leftEncoderRawValue;
         previousRightEncoderPosition = rightEncoderRawValue;
         previousBackEncoderPosition = backEncoderRawValue;
+
+        telemetry.addData("previousLeftEncoderPosition", previousLeftEncoderPosition);
+        telemetry.addData("previousRightEncoderPosition", previousRightEncoderPosition);
+        telemetry.addData("previousBackEncoderPosition", previousBackEncoderPosition);
     }
 
-    private void odometryDrive (double desX, double desY, double desRobotAngle){
-        pow = 0.5;
-
-        x = desX - pose [0];
-        y = desY - pose [1];
-        angle = desRobotAngle - Math.toDegrees(pose[2]);
-
-
-        double c = Math.hypot(x, y); // find length of hypot using tan of triangle made by x and y
-        double perct = pow * c; // scale by max power
-        double theta;
-
-        // determine quandrant
-        if (x <= 0 && y >= 0) {
-            theta = Math.atan(Math.abs(x) / Math.abs(y));
-            theta += (Math.PI / 2);
-        } else if (x < 0 && y <= 0) {
-            theta = Math.atan(Math.abs(y) / Math.abs(x));
-            theta += (Math.PI);
-        } else if (x >= 0 && y < 0) {
-            theta = Math.atan(Math.abs(x) / Math.abs(y));
-            theta += (3 * Math.PI / 2);
-        } else {
-            theta = Math.atan(Math.abs(y) / Math.abs(x));
-        }
-
-
-        double dir = 1; // default of direction being forward
-        if (theta >= Math.PI) { // if we have an angle other 180 degrees on unit circle, then direction is backward
-            theta -= Math.PI;
-            dir = -1;
-        }
-
-
-        telemetry.addData("pow", pow);
-        telemetry.addData("dir", dir);
-        telemetry.addData("c", c);
-        telemetry.addData("theta", theta);
-
-
-        // calculate power of front right wheel
-        double fr = dir * ((theta - (Math.PI / 4)) / (Math.PI / 4)); // wheels move on a 45 degree angle, find the ratio of where we want to drive to where we need to be
-        if (fr > 1) fr = 1; // cap speeds at 1 and -1
-        if (fr < -1) fr = -1;
-        fr = (perct * fr); // scale by power
-
-        // calculate power of back left wheel, wheels move on 45 degree angles, find the ratio between where we are and where we should be
-        double bl = dir * ((theta - (Math.PI / 4)) / (Math.PI / 4));
-        if (bl > 1) bl = 1; // cap speeds at 1 and -1
-        if (bl < -1) bl = -1;
-        bl = (perct * bl); // scale by power
-
-        // calculate power of front left wheel, wheels move on 45 degree angles, find the ratio between where we are and where we should be
-        double fl = -dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4));
-        if (fl > 1) fl = 1; // cap powers at 1 and -1
-        if (fl < -1) fl = -1;
-        fl = (perct * fl); // scale by power
-
-        // calculate power of back right wheel, wheels move on 45 degree angles, find the ratio between where we are and where we should be
-        double br = -dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4));
-        if (br > 1) br = 1; // cap powers at 1 and -1
-        if (br < -1) br = -1;
-        br = (perct * br); // scale by power
-
-        // add power for each wheel
-        telemetry.addData("fl", fl);
-        telemetry.addData("fr", fr);
-        telemetry.addData("bl", bl);
-        telemetry.addData("br", br);
-
-
-        telemetry.addData("rlf", -dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4)));
-        telemetry.addData("rrf", dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4)));
-        telemetry.addData("rbl", dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4)));
-        telemetry.addData("rbr", -dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4)));
-
+    private void robotAnglePID (){
         //PID on angle
         currentTime = odometryTimer.milliseconds();
+        angle = desAngle - Math.toDegrees(pose [2]);
         oP = angle * Op;
         oI = Oi * (angle * (currentTime - previousTime));
         oD = Od * (angle - previousError) / (currentTime - previousTime);
-        double anglePow = (oP + oI +oD);
+        anglePow = (oP + oI +oD);
+        if (anglePow > 0.7) anglePow = 0.7;
+        if  (anglePow< -0.7) anglePow = -0.7;
         previousTime = currentTime;
         previousError = angle;
-
-        // set power of wheels and apply any rotation
-        leftFront.setPower(fl + anglePow);
-        leftBack.setPower(bl + anglePow);
-        rightFront.setPower(fr - anglePow);
-        rightBack.setPower(br - anglePow);
-    }
-
-    private void conditionalStep (){
-        if (x < bufferO && y < bufferO && angle < bufferOT){
-            step++;
-        }
     }
 
     private void driveForward(double p){
-        leftFront.setPower(p);
-        leftBack.setPower(p);
-        rightFront.setPower(p);
-        rightBack.setPower(p);
+        leftFront.setPower(p+anglePow);
+        leftBack.setPower(p+anglePow);
+        rightFront.setPower(p-anglePow);
+        rightBack.setPower(p-anglePow);
     }
 
     private void driveBackwards(double p){
-        leftFront.setPower(-p);
-        leftBack.setPower(-p);
-        rightFront.setPower(-p);
-        rightBack.setPower(-p);
+        leftFront.setPower(-p+anglePow);
+        leftBack.setPower(-p+anglePow);
+        rightFront.setPower(-p-anglePow);
+        rightBack.setPower(-p-anglePow);
     }
 
     private void strafeLeft(double p){
-        leftFront.setPower(-p);
-        leftBack.setPower(p);
-        rightFront.setPower(p);
-        rightBack.setPower(-p);
+        leftFront.setPower(-p+anglePow);
+        leftBack.setPower(p+anglePow);
+        rightFront.setPower(p-anglePow);
+        rightBack.setPower(-p-anglePow);
     }
 
     private void strafeRight(double p){
-        leftFront.setPower(p);
-        leftBack.setPower(-p);
-        rightFront.setPower(-p);
-        rightBack.setPower(p);
+        leftFront.setPower(p+anglePow);
+        leftBack.setPower(-p+anglePow);
+        rightFront.setPower(-p-anglePow);
+        rightBack.setPower(p-anglePow);
+    }
+
+    private void clockwise (){
+            leftFront.setPower(anglePow);
+            leftBack.setPower(anglePow);
+            rightFront.setPower(-anglePow);
+            rightBack.setPower(-anglePow);
+    }
+
+    private void counterClockwise (){
+        leftFront.setPower(anglePow);
+        leftBack.setPower(anglePow);
+        rightFront.setPower(-anglePow);
+        rightBack.setPower(-anglePow);
     }
 
     private void drive (double dfl, double dbl, double dfr, double dbr){
-        leftFront.setPower(dfl);
-        leftBack.setPower(dbl);
-        rightFront.setPower(dfr);
-        rightBack.setPower(dbr);
+        leftFront.setPower(dfl+anglePow);
+        leftBack.setPower(dbl+anglePow);
+        rightFront.setPower(dfr-anglePow);
+        rightBack.setPower(dbr-anglePow);
     }
 }

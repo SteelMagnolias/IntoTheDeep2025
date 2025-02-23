@@ -74,6 +74,12 @@ public class earlySeasonDrive extends OpMode {
         armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         slideEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
+       leftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        leftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        
+        armRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         armLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         armSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
@@ -331,7 +337,7 @@ public class earlySeasonDrive extends OpMode {
         armLeft.setPower(armPow);
         armRight.setPower(armPow);
 
-        armPos = armEncoder.getCurrentPosition();
+        armPos = -armEncoder.getCurrentPosition();
         telemetry.addData("arm encoder", armPos);
 
         //set where we want to be
