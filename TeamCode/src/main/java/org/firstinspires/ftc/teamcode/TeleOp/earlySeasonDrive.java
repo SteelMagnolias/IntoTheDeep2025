@@ -35,9 +35,9 @@ public class earlySeasonDrive extends OpMode {
     double P;
     double I;
     double D;
-    double KP = 0;
-    double KI = 0;
-    double KD = 0;
+    double KP = 0.002;
+    double KI = 0.00001;
+    double KD = 0.025;
 
 
 
@@ -60,6 +60,8 @@ public class earlySeasonDrive extends OpMode {
         rightBack.setDirection(DcMotor.Direction.REVERSE);
         armSlide.setDirection(DcMotor.Direction.REVERSE);
         intake.setDirection(DcMotor.Direction.REVERSE);
+        armLeft.setDirection(DcMotor.Direction.REVERSE);
+        armRight.setDirection(DcMotor.Direction.REVERSE);
 
         armLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         armRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -337,39 +339,43 @@ public class earlySeasonDrive extends OpMode {
             //stop
             desSlidePos = 0;
         } else if (b2) {
-            desSlidePos = 0; //wall
-        } else if (y2) {
-            desSlidePos = 0; //bar
+            desSlidePos = -100; //wall & bar
         } else if (x2) {
-            desSlidePos = 0; //ground pickup
+            desSlidePos = -5662; //ground pickup
         }
 
         //PID stuff
-        slidePos = -slideEncoder.getCurrentPosition();
+        slidePos = slideEncoder.getCurrentPosition();
         currentError = slidePos - desSlidePos;
         currentTime = armTimer.milliseconds();
 
         P = currentError * KP;
         I = KI * (currentError * (currentTime - previousTime));
         D = KD * (currentError - previousError) / (currentTime - previousTime);
+        if(slidePow < -0.7) slidePow = -0.7;
+        if(slidePow > 0.7) slidePow = 0.7;
         slidePow = (P + I + D);
 
         previousTime = currentTime;
         previousError = currentError;
 
-        if (armPos < 1600 && slidePos < 50) {
+        if (armPos < 1600 && slidePos < -25) {
             slidePow = 0;
-        }else if (armPos < 1600){
-            slidePow = -0.9;
-        } else if (righty2 > 0.1 && slidePos < 6500){
+        }else if (armPos < -1600){
+            slidePow = -0.8;
+        } else if (righty2 < -0.1 && slidePos < -50){
             slidePow = 0.4 * righty2;
-        } else if (righty2 < -0.1 && slidePos > 50){
+            desSlidePos = 0;
+        } else if (righty2 > 0.1 && slidePos > -6500){
             slidePow = 0.4 * righty2;
-        } else if (buttonRight2 && slidePos < 6500){
+            desSlidePos = 0;
+        } else if (buttonLeft2 && slidePos > -6500){
             slidePow = 0.3;
-        } else if (buttonLeft2 && slidePos > 50) {
+            desSlidePos = 0;
+        } else if (buttonRight2 && slidePos < -50) {
             slidePow = -0.3;
-        } else if (desSlidePos != 0) {
+            desSlidePos = 0;
+        } else if (desSlidePos == 0) {
             slidePow = 0;
         }
 

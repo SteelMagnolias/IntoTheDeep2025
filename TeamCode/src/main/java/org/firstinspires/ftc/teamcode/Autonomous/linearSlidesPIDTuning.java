@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 @Autonomous(name = "linearSlidesPIDTuning", group = "Iterative Opmode")
 public class linearSlidesPIDTuning extends OpMode {
 
-    private DcMotor linearSlidesLeft;
+    private DcMotor armSlide;
     private DcMotor armEncoder;
 
     ElapsedTime armTimer = new ElapsedTime();
@@ -23,17 +23,19 @@ public class linearSlidesPIDTuning extends OpMode {
     double P;
     double I;
     double D;
-    double SP = 0;
-    double SI = 0;
-    double SD = 0;
+    double SP = 0.002;
+    double SI = 0.00001;
+    double SD = 0.05;
 
     public void init() {
-        linearSlidesLeft = hardwareMap.get(DcMotor.class, "linearSlidesLeft");
+        armSlide = hardwareMap.get(DcMotor.class, "armSlide");
 
         //encoder setup
-        armEncoder = linearSlidesLeft;
+        armEncoder = armSlide;
 
+        armSlide.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        armSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
     @Override
@@ -42,10 +44,10 @@ public class linearSlidesPIDTuning extends OpMode {
         boolean a2 = gamepad2.a; // this is the value of the a button on gamepad2
         boolean b2 = gamepad2.b;
 
-        desLength += lefty2 * 3;
+        desLength += lefty2 * 8;
 
         //PID stuff
-        ArmLength = -armEncoder.getCurrentPosition();
+        ArmLength = armEncoder.getCurrentPosition();
         currentError = ArmLength - desLength;
         currentTime = armTimer.milliseconds();
 
@@ -53,19 +55,22 @@ public class linearSlidesPIDTuning extends OpMode {
         I = SI * (currentError * (currentTime - previousTime));
         D = SD * (currentError - previousError) / (currentTime - previousTime);
         linearSlidesPow = (P + I + D);
+        if(linearSlidesPow < -0.7) linearSlidesPow = -0.7;
+        if(linearSlidesPow > 0.7) linearSlidesPow = 0.7;
 
         previousTime = currentTime;
         previousError = currentError;
 
 
         if(a2) {
-            linearSlidesLeft.setPower(linearSlidesPow);
+            armSlide.setPower(linearSlidesPow);
+            telemetry.addLine("running motor");
         } else if (b2) {
             previousError = 0;
             previousTime = 0;
             armTimer.reset();
         } else {
-            linearSlidesLeft.setPower(0);
+            armSlide.setPower(0);
         }
 
         telemetry.addData("linearSlidesPow", linearSlidesPow);
