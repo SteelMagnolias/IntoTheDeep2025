@@ -10,22 +10,25 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
-@Autonomous(name = "lateSeasonObservationZone", group = "Iterative OpMode")
-public class lateSeasonObservationZone extends OpMode {
+@Autonomous(name = "lateSeasonAuton", group = "Iterative OpMode")
+public class lateSeasonAuton extends OpMode {
 
     // motors & servos
     private DcMotor leftFront;
     private DcMotor rightFront;
     private DcMotor leftBack;
     private DcMotor rightBack;
+
     private DcMotor armLeft;
     private DcMotor armRight;
     private DcMotor armSlide;
+
     private CRServo intake;
 
     // encoders
     private DcMotor armEncoder;
     private DcMotor slideEncoder;
+
     private DcMotor leftEncoder;
     private DcMotor rightEncoder;
     private DcMotor backEncoder;
@@ -40,18 +43,21 @@ public class lateSeasonObservationZone extends OpMode {
 
     //general
     ElapsedTime PIDTimer = new ElapsedTime();
+    ElapsedTime wTimer = new ElapsedTime();
+    ElapsedTime aTimer = new ElapsedTime();
     ElapsedTime intakeTimer = new ElapsedTime();
 
     double currentTime;
     double previousTime;
 
-    int stepW = 0;
+    int stepW = 1;
     int stepA = 1;
-    int stepRepeat = 1;
+    int stepR = 1;
 
-    double pow = 0.5;
+    double pow = 0.6;
     double armPow = 0.9;
     double slidePow = 0.9;
+    double anglePow = 0;
 
     //color
     int targetRedLeft = 2000;
@@ -63,16 +69,13 @@ public class lateSeasonObservationZone extends OpMode {
     //distance
     double distanceErrorLeft = 0;
     double distanceErrorRight = 0;
-    double distanceErrorSide = 0;
 
     double previousDistanceErrorLeft = 0;
     double previousDistanceErrorRight = 0;
-    double previousDistanceErrorSide = 0;
 
     double desDis;
     double disLeft;
     double disRight;
-    double disSide;
 
     //arm
     double armError = 0;
@@ -86,24 +89,21 @@ public class lateSeasonObservationZone extends OpMode {
     double armLength;
 
     //odometry
-    double x;
-    double y;
     double angle;
-
+    double desAngle = 0;
     double previousAngle = 0;
 
-    double trackWidth = 20; //centimeters
-    double yOffset = -13.5; //centimeters
-    double leftWheelDiameter = 3.469; //centimeters
-    double rightWheelDiameter = 3.315; //centimeters
-    double backWheelDiameter = 3.471; //centimeters
+    double trackWidth = 36.75; //centimeters
+    double yOffset = 3.75; //centimeters
+    double leftWheelDiameter = 4.732; //centimeters
+    double rightWheelDiameter = 4.729; //centimeters
+    double backWheelDiameter = 4.752; //centimeters
     double leftWheelCircumference = Math.PI * leftWheelDiameter;
     double rightWheelCircumference = Math.PI * rightWheelDiameter;
     double backWheelCircumference = Math.PI * backWheelDiameter;
-    double countsPerRotation = 8192;
+    double countsPerRotation = 2000;
 
     double[] pose = {0, 0, Math.toRadians(0)};
-    double[] desPos = {0, 0, 0};
 
     double previousLeftEncoderPosition = 0;
     double previousRightEncoderPosition = 0;
@@ -111,27 +111,23 @@ public class lateSeasonObservationZone extends OpMode {
 
     //tuning variables
     //arm PIDs
-    double AP = 0.00535;
-    double AI = 0.000002;
-    double AD = 0.5;
+    double AP = 0.0015;
+    double AI = 0.000005;
+    double AD = 0.005;
 
-    double SP = 1;
+    double SP = 0.00015;
     double SI = 0;
     double SD = 0;
 
-    //distance PIDs
-    double DP = 1;
-    double DI = 0;
-    double DD = 0;
-
-    double DSP = 1;
-    double DSI = 0;
-    double DSD = 0;
+    //distance PID
+    double DP = 0.01;
+    double DI = 0.0005;
+    double DD = 0.05;
 
     //odometry rotation PID
-    double OP = 1;
-    double OI = 0;
-    double OD = 0;
+    double OP = 0.07;
+    double OI = 0.0005;
+    double OD = 0.5;
 
     //other variables
     double bufferD = 0.6;
@@ -141,28 +137,7 @@ public class lateSeasonObservationZone extends OpMode {
     double bufferOT = 3;
 
     double trackWidthDelta = 0;
-    double yOffsetDelta = 0;
-
-    //locations odometry
-    // lines X - lowercase v, w, x, y, z
-    // lines Y - uppercase I, II, III, IV, V
-    // spaces X - lowercase a, b, c, d, e, f
-    // spaces Y - 1, 2, 3, 4, 5, 6;
-    // rotation is in degrees 0 is facing the audience wall
-    // rotation - r0, r90, r180, r270
-    double[] fIIIr0 = {0, 0, 0};
-    double[] zIIIr90 = {0, 0, 90};
-    double[] f6r270 = {0, 0, 270};
-    double[] e5r90 = {0, 0, 90};
-    double[] dVr90 = {0, 0, 90};
-    double[] zVr90 = {0, 0, 90};
-    double[] d6r90 = {0, 0, 90};
-    double[] f6r90 = {0, 0, 90};
-    //locations other
-    double hangDistance = 0;
-    double hangAngle = 0;
-    double wallPickup = 0;
-    double resetArm = 0;
+    double yOffsetDelta = -1;
 
     public void init() {
         //motors and servos
@@ -170,27 +145,12 @@ public class lateSeasonObservationZone extends OpMode {
         rightBack = hardwareMap.get(DcMotor.class, "rightBack");
         leftFront = hardwareMap.get(DcMotor.class, "leftFront");
         rightFront = hardwareMap.get(DcMotor.class, "rightFront");
+
         armLeft = hardwareMap.get(DcMotor.class, "armLeft");
         armRight = hardwareMap.get(DcMotor.class, "armRight");
         armSlide = hardwareMap.get(DcMotor.class, "armSlide");
+
         intake = hardwareMap.get(CRServo.class, "intake");
-
-        //motor set up
-        leftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        rightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        leftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        rightBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        armLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        armRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        armSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-        leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        armLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        armRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        armSlide.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         //encoder set up
         leftEncoder = leftFront;
@@ -202,8 +162,36 @@ public class lateSeasonObservationZone extends OpMode {
         leftEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         backEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
         armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         slideEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        //motor set up
+        rightBack.setDirection(DcMotor.Direction.REVERSE);
+
+        armSlide.setDirection(DcMotor.Direction.REVERSE);
+        armLeft.setDirection(DcMotor.Direction.REVERSE);
+        armRight.setDirection(DcMotor.Direction.REVERSE);
+
+        intake.setDirection(DcMotor.Direction.REVERSE);
+
+        leftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        leftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        armLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        armRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        armSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        armLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        armRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        armSlide.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         //sensors
         distanceSide = hardwareMap.get(DistanceSensor.class, "distanceLeft");
@@ -224,164 +212,89 @@ public class lateSeasonObservationZone extends OpMode {
     @Override
     public void loop() {
 
-        currentTime = PIDTimer.milliseconds();
         runOdometry();
+        robotAnglePID();
+
+        currentTime = PIDTimer.milliseconds();
 
         switch (stepW) {
-            case 0:
-                targetBlueLeft = colorLeft.blue();
-                targetRedLeft = colorLeft.red();
+            case 1: // strafe right from wall
 
-                targetBlueRight = colorRight.blue();
-                targetRedRight = colorRight.red();
 
-                intake.setPower(0.25);
-                stepW++;
-                break;
-            case 1:
-                stepW++;
-                stepA = 2;
                 break;
 
-            case 2:
-                desPos = zIIIr90;
-                odometryDrive();
+            case 2:// turn clockwise to face submersible
 
-                if (Math.abs(x) < bufferO && Math.abs(y) < bufferO && Math.abs(angle) < bufferOT){
-                    stepW++;
-                    drive(0, 0, 0, 0);
-                }
                 break;
 
-            case 3:
-                desDis = hangDistance;
-                distanceDrive();
+            case 3: // distance drive towards hang
 
-                if (Math.abs(distanceErrorLeft) < bufferD && Math.abs(distanceErrorRight) < bufferD){
-                    if(stepRepeat == 1) {
-                        stepW++;
-                        stepA = 3;
-                        intake.setPower(-1);
-                    } else {
-                        stepW = 5;
-                        stepA = 4;
-                    }
-                    drive(0, 0, 0, 0);
-                }
                 break;
 
-            case 4:
-                desPos = f6r270;
-                odometryDrive();
+            case 4: // distance drive away from han
 
-                if (Math.abs(x) < bufferO && Math.abs(y) < bufferO && Math.abs(angle) < bufferOT){
-                    stepA = 5;
-                    intakeTimer.reset();
-                    stepRepeat++;
-                    drive(0, 0, 0, 0);
-                }
                 break;
 
-            case 5:
-                desPos = e5r90;
-                odometryDrive();
+            case 5: // strafe right to pick up zone second time go to step 10
 
-                if (Math.abs(x) < bufferO && Math.abs(y) < bufferO && Math.abs(angle) < bufferOT){
-                    stepW++;
-                    drive(0, 0, 0, 0);
-                }
                 break;
 
-            case 6:
-                desPos = dVr90;
-                odometryDrive();
+            case 6: // turn to face pickup
 
-                if (Math.abs(x) < bufferO && Math.abs(y) < bufferO && Math.abs(angle) < bufferOT){
-                    if (stepRepeat == 2) {
-                        stepW++;
-                    } else {
-                        stepW = 8;
-                    }
-                    drive(0, 0, 0, 0);
-                }
                 break;
 
-            case 7:
-                desPos = zVr90;
-                odometryDrive();
+            case 7: // drive in color or odo not sure yet
 
-                if (Math.abs(x) < bufferO && Math.abs(y) < bufferO && Math.abs(angle) < bufferOT) {
-                    stepW = 6;
-                    stepRepeat = 3;
-                    drive(0, 0, 0, 0);
-                }
                 break;
 
-            case 8:
-                desPos = d6r90;
-                if (Math.abs(x) < bufferO && Math.abs(y) < bufferO && Math.abs(angle) < bufferOT) {
-                    stepW++;
-                    drive(0, 0, 0, 0);
-                }
+            case 8: // strafe right to submersible
+
                 break;
 
-            case 9:
-                desPos = f6r90;
-                if (Math.abs(x) < bufferO && Math.abs(y) < bufferO && Math.abs(angle) < bufferOT){
-                    stepW++;
-                    drive(0, 0, 0, 0);
-                }
+            case 9: // turn to face submersible
+
+                break;
+
+            case 10: // go back to case 3 first on repeat color drive forward
+
                 break;
 
             default:
+
                 drive(0, 0, 0, 0);
+
                 break;
         }
 
         switch (stepA) {
-            case 1:
-                arm_slide(0, 0);
+            case 1: //extend wrist
+
                 break;
 
-            case 2:
-                desArmPos = hangAngle;
-                arm();
-                intake.setPower(0);
+            case 2: // retract wrist
 
-                if(armError < bufferA){
-                    stepA = 1;
-                }
                 break;
 
-            case 3:
-                desArmPos =  wallPickup;
-                arm();
+            case 3: // arm hang position
 
-                if(armError < bufferA){
-                    stepA = 1;
-                    stepW = 1;
-                }
                 break;
 
-            case 4:
-                desArmPos = resetArm;
-                arm();
+            case 4: //arm pickup position
 
-                if(armError < bufferA){
-                    stepA = 1;
-                }
                 break;
 
-            case 5:
-                intake.setPower(1);
-                if(intakeTimer.milliseconds() > 1000) {
-                    stepW = 1;
-                    intake.setPower(0.25);
-                }
+            case 5: // intake open
+
+                break;
+
+            case 6: // intake close
+
                 break;
 
             default:
-                arm_slide(0, 0);
+
+                arm(0, 0);
+
                 break;
         }
 
@@ -441,16 +354,59 @@ public class lateSeasonObservationZone extends OpMode {
 
         telemetry.update();
     }
-    private void drive(double dfl, double dbl, double dfr, double dbr) {
-        leftFront.setPower(dfl);
-        leftBack.setPower(dbl);
-        rightFront.setPower(dfr);
-        rightBack.setPower(dbr);
+    private void driveForward(double p){
+        leftFront.setPower(p+anglePow);
+        leftBack.setPower(p+anglePow);
+        rightFront.setPower(p-anglePow);
+        rightBack.setPower(p-anglePow);
     }
 
-    private void arm_slide (double ap, double alp) {
+    private void driveBackwards(double p){
+        leftFront.setPower(-p+anglePow);
+        leftBack.setPower(-p+anglePow);
+        rightFront.setPower(-p-anglePow);
+        rightBack.setPower(-p-anglePow);
+    }
+
+    private void strafeLeft(double p){
+        leftFront.setPower(-p+anglePow);
+        leftBack.setPower(p+anglePow);
+        rightFront.setPower(p-anglePow);
+        rightBack.setPower(-p-anglePow);
+    }
+
+    private void strafeRight(double p){
+        leftFront.setPower(p+anglePow);
+        leftBack.setPower(-p+anglePow);
+        rightFront.setPower(-p-anglePow);
+        rightBack.setPower(p-anglePow);
+    }
+
+    private void clockwise (){
+        leftFront.setPower(anglePow);
+        leftBack.setPower(anglePow);
+        rightFront.setPower(-anglePow);
+        rightBack.setPower(-anglePow);
+    }
+
+    private void counterClockwise (){
+        leftFront.setPower(anglePow);
+        leftBack.setPower(anglePow);
+        rightFront.setPower(-anglePow);
+        rightBack.setPower(-anglePow);
+    }
+
+    private void drive (double dfl, double dbl, double dfr, double dbr){
+        leftFront.setPower(dfl+anglePow);
+        leftBack.setPower(dbl+anglePow);
+        rightFront.setPower(dfr-anglePow);
+        rightBack.setPower(dbr-anglePow);
+    }
+
+    private void arm(double ap, double alp) {
         armLeft.setPower(ap);
         armRight.setPower(ap);
+
         armSlide.setPower(alp);
     }
 
@@ -458,25 +414,39 @@ public class lateSeasonObservationZone extends OpMode {
         //odometry math
         //current encoder ticks
         double leftEncoderRawValue = leftEncoder.getCurrentPosition();
-        double rightEncoderRawValue = rightEncoder.getCurrentPosition();
-        double backEncoderRawValue = backEncoder.getCurrentPosition();
+        double rightEncoderRawValue = -rightEncoder.getCurrentPosition();
+        double backEncoderRawValue = -backEncoder.getCurrentPosition();
+
+        telemetry.addData("leftEncoderRawValue", leftEncoderRawValue);
+        telemetry.addData("rightEncoderRawValue", rightEncoderRawValue);
+        telemetry.addData("backEncoderRawValue", backEncoderRawValue);
 
         //calculate the change from previous position to current encoder position and convert to centimeters
         double leftEncoderChange = ((leftEncoderRawValue - previousLeftEncoderPosition) / countsPerRotation) * leftWheelCircumference;
         double rightEncoderChange = ((rightEncoderRawValue - previousRightEncoderPosition) / countsPerRotation) * rightWheelCircumference;
         double backEncoderChange = ((backEncoderRawValue - previousBackEncoderPosition) / countsPerRotation) * backWheelCircumference;
 
+        telemetry.addData("leftEncoderChange", leftEncoderChange);
+        telemetry.addData("rightEncoderChange", rightEncoderChange);
+        telemetry.addData("backEncoderChange", backEncoderChange);
+
         //find the change in robot angle by averageing both sides using subtraction due to opposite angles and then multiply by the radius to turn it into an angle
         double robotAngle = (leftEncoderChange - rightEncoderChange) / (trackWidth + trackWidthDelta);
+
+        telemetry.addData("robotAngle", robotAngle);
 
         //find the change in x center by averaging the left and right encoder values
         double xCenter = (leftEncoderChange + rightEncoderChange) / 2;
 
+        telemetry.addData("xCenter", xCenter);
+
         //find the change in x perpendicular by multiplying y offset by the robot angle and subtracting it from the back encoder
         double xPerpendicular = backEncoderChange - ((yOffset + yOffsetDelta) * robotAngle);
 
+        telemetry.addData("xPerpendicular", xPerpendicular);
+
         //relate the change in x center to our position on the field using trig
-        double xChange = xCenter * Math.cos(pose[2]) - xPerpendicular * Math.sin(pose[2]);
+        double xChange =  xCenter * Math.cos(pose[2]) - xPerpendicular * Math.sin(pose[2]);
 
         //relate the change in x perpendicular to our position on the field using trig
         double yChange = xCenter * Math.sin(pose[2]) + xPerpendicular * Math.cos(pose[2]);
@@ -490,74 +460,18 @@ public class lateSeasonObservationZone extends OpMode {
         previousLeftEncoderPosition = leftEncoderRawValue;
         previousRightEncoderPosition = rightEncoderRawValue;
         previousBackEncoderPosition = backEncoderRawValue;
+
+        telemetry.addData("previousLeftEncoderPosition", previousLeftEncoderPosition);
+        telemetry.addData("previousRightEncoderPosition", previousRightEncoderPosition);
+        telemetry.addData("previousBackEncoderPosition", previousBackEncoderPosition);
     }
 
-    private void odometryDrive() {
-        pow = 0.5;
-
-        x = desPos [0] - pose[0];
-        y = desPos [1] - pose[1];
-        angle = desPos[2] - Math.toDegrees(pose[2]);
-
-
-        double c = Math.hypot(x, y); // find length of hypot using tan of triangle made by x and y
-        double perct = pow * c; // scale by max power
-        double theta;
-
-        // determine quandrant
-        if (x <= 0 && y >= 0) {
-            theta = Math.atan(Math.abs(x) / Math.abs(y));
-            theta += (Math.PI / 2);
-        } else if (x < 0 && y <= 0) {
-            theta = Math.atan(Math.abs(y) / Math.abs(x));
-            theta += (Math.PI);
-        } else if (x >= 0 && y < 0) {
-            theta = Math.atan(Math.abs(x) / Math.abs(y));
-            theta += (3 * Math.PI / 2);
-        } else {
-            theta = Math.atan(Math.abs(y) / Math.abs(x));
-        }
-
-
-        double dir = 1; // default of direction being forward
-        if (theta >= Math.PI) { // if we have an angle other 180 degrees on unit circle, then direction is backward
-            theta -= Math.PI;
-            dir = -1;
-        }
-
-        // calculate power of front right wheel
-        double fr = dir * ((theta - (Math.PI / 4)) / (Math.PI / 4)); // wheels move on a 45 degree angle, find the ratio of where we want to drive to where we need to be
-        if (fr > 1) fr = 1; // cap speeds at 1 and -1
-        if (fr < -1) fr = -1;
-        fr = (perct * fr); // scale by power
-
-        // calculate power of back left wheel, wheels move on 45 degree angles, find the ratio between where we are and where we should be
-        double bl = dir * ((theta - (Math.PI / 4)) / (Math.PI / 4));
-        if (bl > 1) bl = 1; // cap speeds at 1 and -1
-        if (bl < -1) bl = -1;
-        bl = (perct * bl); // scale by power
-
-        // calculate power of front left wheel, wheels move on 45 degree angles, find the ratio between where we are and where we should be
-        double fl = -dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4));
-        if (fl > 1) fl = 1; // cap powers at 1 and -1
-        if (fl < -1) fl = -1;
-        fl = (perct * fl); // scale by power
-
-        // calculate power of back right wheel, wheels move on 45 degree angles, find the ratio between where we are and where we should be
-        double br = -dir * ((theta - (3 * Math.PI / 4)) / (Math.PI / 4));
-        if (br > 1) br = 1; // cap powers at 1 and -1
-        if (br < -1) br = -1;
-        br = (perct * br); // scale by power
-
+    private void robotAnglePID (){
         //PID on angle
-        double anglePow = ((angle * OP) + (OI * (angle * (currentTime - previousTime))) + (OD * (angle - previousAngle) / (currentTime - previousTime)));
-
-        // set power of wheels and apply any rotation
-        leftFront.setPower(fl + anglePow);
-        leftBack.setPower(bl + anglePow);
-        rightFront.setPower(fr - anglePow);
-        rightBack.setPower(br - anglePow);
-
+        angle = desAngle - Math.toDegrees(pose [2]);
+        anglePow = ((angle * OP) + (OI * (angle * (currentTime - previousTime))) + (OD * (angle - previousAngle) / (currentTime - previousTime)));
+        if (anglePow > 0.7) anglePow = 0.7;
+        if  (anglePow< -0.7) anglePow = -0.7;
         previousAngle = angle;
     }
 
@@ -565,11 +479,11 @@ public class lateSeasonObservationZone extends OpMode {
         disLeft = distanceLeft.getDistance(DistanceUnit.CM);
         distanceErrorLeft = disLeft - desDis;
 
-        disRight =distanceRight.getDistance(DistanceUnit.CM);
+        disRight = distanceRight.getDistance(DistanceUnit.CM);
         distanceErrorRight = disRight - desDis;
 
         double powLeft = ((distanceErrorLeft * DP) + (DI * (distanceErrorLeft * (currentTime - previousTime))) + (DD * (distanceErrorLeft - previousDistanceErrorLeft) / (currentTime - previousTime)));
-        double powRight = ((distanceErrorRight * DP) + (DI * (distanceErrorRight * (currentTime - previousTime))) + (DD * (distanceErrorLeft - previousDistanceErrorRight) / (currentTime - previousTime)));
+        double powRight = ((distanceErrorRight * DP) + (DI * (distanceErrorRight * (currentTime - previousTime))) + (DD * (distanceErrorRight - previousDistanceErrorRight) / (currentTime - previousTime)));
 
         rightBack.setPower(powRight);
         rightFront.setPower(powRight);
@@ -578,20 +492,6 @@ public class lateSeasonObservationZone extends OpMode {
 
         previousDistanceErrorLeft = distanceErrorLeft;
         previousDistanceErrorRight = distanceErrorRight;
-    }
-
-    private void distanceStrafe (){
-        disSide = distanceSide.getDistance(DistanceUnit.CM);
-        distanceErrorSide = disSide - desDis;
-
-        pow = ((distanceErrorSide * DSP) + (DSI * (distanceErrorSide * (currentTime - previousTime))) + (DSD * (distanceErrorSide - previousDistanceErrorSide) / (currentTime - previousTime)));
-
-        rightBack.setPower(pow);
-        rightFront.setPower(pow);
-        leftBack.setPower(pow);
-        leftFront.setPower(pow);
-
-        previousDistanceErrorSide = distanceErrorSide;
     }
 
     private void arm () {
@@ -612,9 +512,28 @@ public class lateSeasonObservationZone extends OpMode {
 
         slidePow = ((lengthError * SP) + (SI * (lengthError * (currentTime - previousTime))) + (SD * (lengthError - previousLengthError) / (currentTime - previousTime)));
 
+        if(slidePow < -0.6) slidePow = -0.6;
+        if(slidePow > 0.6) slidePow = 0.6;
+
         armLeft.setPower(slidePow);
         armRight.setPower(slidePow);
 
         previousLengthError = lengthError;
+    }
+
+    private void stepW(double buffer, double errorValue){
+        if (errorValue > buffer && wTimer.milliseconds() > 250){
+            stepW++;
+        } else {
+            wTimer.reset();
+        }
+    }
+
+    private void stepA(double buffer, double errorValue){
+        if (errorValue > buffer && aTimer.milliseconds() > 250){
+            stepA++;
+        } else {
+            aTimer.reset();
+        }
     }
 }

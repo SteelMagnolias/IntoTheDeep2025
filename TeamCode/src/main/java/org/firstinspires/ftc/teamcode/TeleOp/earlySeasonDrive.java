@@ -358,8 +358,8 @@ public class earlySeasonDrive extends OpMode {
         P = currentError * KP;
         I = KI * (currentError * (currentTime - previousTime));
         D = KD * (currentError - previousError) / (currentTime - previousTime);
-        if(slidePow < -0.7) slidePow = -0.7;
-        if(slidePow > 0.7) slidePow = 0.7;
+        if(slidePow < -0.6) slidePow = -0.6;
+        if(slidePow > 0.6) slidePow = 0.6;
         slidePow = (P + I + D);
 
         previousTime = currentTime;
