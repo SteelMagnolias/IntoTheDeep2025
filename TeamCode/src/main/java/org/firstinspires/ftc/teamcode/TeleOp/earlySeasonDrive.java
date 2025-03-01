@@ -35,9 +35,9 @@ public class earlySeasonDrive extends OpMode {
     double P;
     double I;
     double D;
-    double KP = 0.0015;
-    double KI = 0.00001;
-    double KD = 0.025;
+    double KP = 0.00015;
+    double KI = 0;
+    double KD = 0;
 
 
 
@@ -381,7 +381,7 @@ public class earlySeasonDrive extends OpMode {
         } else if (buttonRight2 && slidePos < -50) {
             slidePow = -0.3;
             desSlidePos = 0;
-        } else if (desSlidePos == 0) {
+        } else if (desSlidePos == 0 || armPos < 3500) {
             slidePow = 0;
         }
 
