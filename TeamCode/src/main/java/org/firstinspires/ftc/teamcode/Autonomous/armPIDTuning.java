@@ -24,45 +24,62 @@ public class armPIDTuning extends OpMode {
     double P;
     double I;
     double D;
-    double AP = 0.00535;
-    double AI = 0.000002;
-    double AD = 0.5;
+    double AP = 0.0015;
+    double AI = 0.000005;
+    double AD = 0.005;
 
     public void init() {
         armLeft = hardwareMap.get(DcMotor.class, "armLeft");
         armRight = hardwareMap.get(DcMotor.class, "armRight");
 
         armRight.setDirection(DcMotor.Direction.REVERSE);
+        armLeft.setDirection(DcMotor.Direction.REVERSE);
+
+        armLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        armRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         //encoder setup
         armEncoder = armLeft;
 
         armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        armRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        armLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
     @Override
     public void loop() {
         double lefty2 = -(gamepad2.left_stick_y); // this is the value of gamepad2's left joystick y value
         boolean a2 = gamepad2.a; // this is the value of the a button on gamepad2
+        boolean b2 = gamepad2.b;
 
-        desArmPos += lefty2 * 3;
+        desArmPos += lefty2 * 4;
+
+        //PID stuff
+        armPos = -armEncoder.getCurrentPosition();
+        currentError = armPos - desArmPos;
+        currentTime = armTimer.milliseconds();
+
+        P = currentError * AP;
+        I = AI * (currentError * (currentTime - previousTime));
+        D = AD * (currentError - previousError) / (currentTime - previousTime);
+        armPow = (P + I + D);
+
+        previousTime = currentTime;
+        previousError = currentError;
+
 
         if(a2) {
-            //PID stuff
-            armPos = -armEncoder.getCurrentPosition();
-            currentError = armPos - desArmPos;
-            currentTime = armTimer.milliseconds();
-
-            P = currentError * AP;
-            I = AI * (currentError * (currentTime - previousTime));
-            D = AD * (currentError - previousError) / (currentTime - previousTime);
-            armPow = (P + I + D);
-
-            previousTime = currentTime;
-            previousError = currentError;
-
             armLeft.setPower(armPow);
             armRight.setPower(armPow);
+            telemetry.addLine("running motor");
+        } else if (b2) {
+            previousError = 0;
+            previousTime = 0;
+            armTimer.reset();
+        } else {
+            armLeft.setPower(0);
+            armRight.setPower(0);
         }
 
         telemetry.addData("armPow", armPow);

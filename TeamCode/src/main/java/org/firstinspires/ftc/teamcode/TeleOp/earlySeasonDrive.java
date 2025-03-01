@@ -35,7 +35,7 @@ public class earlySeasonDrive extends OpMode {
     double P;
     double I;
     double D;
-    double KP = 0.002;
+    double KP = 0.0015;
     double KI = 0.00001;
     double KD = 0.025;
 
@@ -365,9 +365,9 @@ public class earlySeasonDrive extends OpMode {
         previousTime = currentTime;
         previousError = currentError;
 
-        if (armPos < 1600 && slidePos < -25) {
+        if (armPos < 2000 && slidePos > -25) {
             slidePow = 0;
-        }else if (armPos < -1600){
+        }else if (armPos < 2000){
             slidePow = -0.8;
         } else if (righty2 < -0.1 && slidePos < -50){
             slidePow = 0.4 * righty2;

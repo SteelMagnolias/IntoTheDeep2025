@@ -35,9 +35,9 @@ public class distanceDrivePIDTuning extends OpMode {
     double P;
     double I;
     double D;
-    double DP = 0.0275;
-    double DI = 0;
-    double DD = 0.2;
+    double DP = 0.01;
+    double DI = 0.0005;
+    double DD = 0.05;
 
     public void init() {
         leftBack = hardwareMap.get(DcMotor.class, "leftBack");
@@ -48,8 +48,12 @@ public class distanceDrivePIDTuning extends OpMode {
         distanceLeft = hardwareMap.get(DistanceSensor.class, "distanceLeft");
         distanceRight = hardwareMap.get(DistanceSensor.class, "distanceRight");
 
-        leftFront.setDirection(DcMotor.Direction.REVERSE);
-        rightFront.setDirection(DcMotor.Direction.REVERSE);
+        rightBack.setDirection(DcMotor.Direction.REVERSE);
+
+        leftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        leftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
     @Override
@@ -62,8 +66,7 @@ public class distanceDrivePIDTuning extends OpMode {
 
         //PID stuff left
         disLeft = distanceLeft.getDistance(DistanceUnit.CM);
-        double adjustedLeftDis = disLeft + 0.525556 * Math.pow(1.03381, disLeft);
-        currentErrorLeft = adjustedLeftDis - desDis;
+        currentErrorLeft = disLeft - desDis;
         currentTime = PIDTimer.milliseconds();
 
         P = currentErrorLeft * DP;
@@ -107,7 +110,6 @@ public class distanceDrivePIDTuning extends OpMode {
         telemetry.addData("powLeft", powLeft);
         telemetry.addData("desired distance", desDis);
         telemetry.addData("distance Right", disRight);
-        telemetry.addData("adjusted distance left", adjustedLeftDis);
         telemetry.addData("distance Left", disLeft);
         telemetry.update();
     }

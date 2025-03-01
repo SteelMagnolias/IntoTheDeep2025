@@ -1,11 +1,10 @@
 package org.firstinspires.ftc.teamcode.TeleOp;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
-@Disabled
 @TeleOp (name = "wheelsOnly" , group = "Iterative Opmode")
 public class wheelsOnly extends OpMode {
     // declare motors and servos
@@ -27,8 +26,13 @@ public class wheelsOnly extends OpMode {
         rightFront = hardwareMap.get(DcMotor.class, "rightFront");
 
         //reverse motors
-        rightBack.setDirection(DcMotor.Direction.REVERSE);
         rightFront.setDirection(DcMotor.Direction.REVERSE);
+        leftFront.setDirection(DcMotor.Direction.REVERSE);
+
+        leftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        leftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
 
@@ -105,7 +109,7 @@ public class wheelsOnly extends OpMode {
 
         //wheels code
         if (a1) pow = 1; // turbo mode
-        else pow = 0.8; // regular speed
+        else pow = 0.9; // regular speed
         double c = Math.hypot(leftx1, lefty1); // find length of hypot using tan of triangle made by x and y
         double perct = pow * c; // scale by max power
         if (c <= .1) {
@@ -197,7 +201,7 @@ public class wheelsOnly extends OpMode {
 
 
         // Below: precision (slower) movement
-        pow = 0.275;
+        pow = 0.3;
         if (buttonUp1) {
             // slowly moves forwards
             leftFront.setPower(pow);
