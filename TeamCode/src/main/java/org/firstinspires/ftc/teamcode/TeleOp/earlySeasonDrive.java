@@ -120,6 +120,8 @@ public class earlySeasonDrive extends OpMode {
         boolean y2 = gamepad2.y; // this is the value of the y button on gamepad2
         boolean b2 = gamepad2.b; // this is the value of the b button on gamepad2
         boolean back2 = gamepad2.back;
+        float triggerR2 = gamepad2.right_trigger;
+        float triggerL2 = gamepad2.left_trigger;
 
         // gamepad telemetry
         // gamepad 1
@@ -375,10 +377,10 @@ public class earlySeasonDrive extends OpMode {
         } else if (righty2 > 0.1 && slidePos > -6500){
             slidePow = 0.4 * righty2;
             desSlidePos = 0;
-        } else if (buttonLeft2 && slidePos > -6500){
+        } else if (triggerR2 > 0.3 && slidePos > -6500){
             slidePow = 0.3;
             desSlidePos = 0;
-        } else if (buttonRight2 && slidePos < -50) {
+        } else if (triggerL2 > 0.3 && slidePos < -50) {
             slidePow = -0.3;
             desSlidePos = 0;
         } else if (desSlidePos == 0 || armPos < 3500) {

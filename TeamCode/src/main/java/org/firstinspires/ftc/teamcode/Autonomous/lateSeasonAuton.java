@@ -34,7 +34,6 @@ public class lateSeasonAuton extends OpMode {
     private DcMotor backEncoder;
 
     //sensors
-    private DistanceSensor distanceSide;
     private DistanceSensor distanceLeft;
     private DistanceSensor distanceRight;
 
@@ -51,7 +50,7 @@ public class lateSeasonAuton extends OpMode {
     double previousTime;
 
     int stepW = 1;
-    int stepA = 1;
+    int stepA = 0;
     int stepR = 1;
 
     double pow = 0.6;
@@ -89,9 +88,9 @@ public class lateSeasonAuton extends OpMode {
     double armLength;
 
     //odometry
-    double angle;
+    double angleError;
     double desAngle = 0;
-    double previousAngle = 0;
+    double previousAngleError = 0;
 
     double trackWidth = 36.75; //centimeters
     double yOffset = 3.75; //centimeters
@@ -111,7 +110,7 @@ public class lateSeasonAuton extends OpMode {
 
     //tuning variables
     //arm PIDs
-    double AP = 0.0015;
+    double AP = 0.001;
     double AI = 0.000005;
     double AD = 0.005;
 
@@ -120,13 +119,13 @@ public class lateSeasonAuton extends OpMode {
     double SD = 0;
 
     //distance PID
-    double DP = 0.01;
-    double DI = 0.0005;
+    double DP = 0.04;
+    double DI = 0.00000005;
     double DD = 0.05;
 
     //odometry rotation PID
-    double OP = 0.07;
-    double OI = 0.0005;
+    double OP = 0.04;
+    double OI = 0;
     double OD = 0.5;
 
     //other variables
@@ -152,21 +151,7 @@ public class lateSeasonAuton extends OpMode {
 
         intake = hardwareMap.get(CRServo.class, "intake");
 
-        //encoder set up
-        leftEncoder = leftFront;
-        rightEncoder = rightFront;
-        backEncoder = rightBack;
-        armEncoder = armLeft;
-        slideEncoder = armSlide;
-
-        leftEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        rightEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        backEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-        armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        slideEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-        //motor set up
+        //reversals
         rightBack.setDirection(DcMotor.Direction.REVERSE);
 
         armSlide.setDirection(DcMotor.Direction.REVERSE);
@@ -174,6 +159,14 @@ public class lateSeasonAuton extends OpMode {
         armRight.setDirection(DcMotor.Direction.REVERSE);
 
         intake.setDirection(DcMotor.Direction.REVERSE);
+
+        //motor set up
+        leftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        armLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        armSlide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         leftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -193,8 +186,19 @@ public class lateSeasonAuton extends OpMode {
         armRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         armSlide.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
+        //encoder set up
+        leftEncoder = leftFront;
+        rightEncoder = rightFront;
+        backEncoder = rightBack;
+
+        armEncoder = armLeft;
+        slideEncoder = armSlide;
+
+        previousLeftEncoderPosition = leftEncoder.getCurrentPosition();
+        previousRightEncoderPosition = -rightEncoder.getCurrentPosition();
+        previousBackEncoderPosition = -backEncoder.getCurrentPosition();
+
         //sensors
-        distanceSide = hardwareMap.get(DistanceSensor.class, "distanceLeft");
         distanceLeft = hardwareMap.get(DistanceSensor.class, "distanceLeft");
         distanceRight = hardwareMap.get(DistanceSensor.class, "distanceRight");
 
@@ -207,55 +211,47 @@ public class lateSeasonAuton extends OpMode {
 
         targetBlueLeft = colorLeft.blue() + 250;
         targetRedLeft = colorLeft.red() + 250;
+
+        telemetry.addLine("ready");
     }
 
     @Override
     public void loop() {
+        currentTime = PIDTimer.milliseconds();
 
         runOdometry();
         robotAnglePID();
 
-        currentTime = PIDTimer.milliseconds();
-
         switch (stepW) {
-            case 1: // strafe right from wall
-
-
+            case 1: //drive forwards to pick up
+                driveForward(pow);
+                if (pose[0] > 53){
+                    drive(0,0,0,0);
+                    stepW++;
+                }
                 break;
 
-            case 2:// turn clockwise to face submersible
 
+            case 10: // strafe right from wall
+                strafeRight(pow);
+                if(pose[1] < -17){
+                    drive(0,0,0,0);
+                    stepW++;
+                    desAngle = 45;
+                }
                 break;
 
-            case 3: // distance drive towards hang
+            case 12:// turn clockwise to face submersible
+                turn();
+                stepW (bufferOT, angleError);
+                break;
 
+            case 13: // distance drive towards hang
+                desDis = 30;
+                distanceDrive();
                 break;
 
             case 4: // distance drive away from han
-
-                break;
-
-            case 5: // strafe right to pick up zone second time go to step 10
-
-                break;
-
-            case 6: // turn to face pickup
-
-                break;
-
-            case 7: // drive in color or odo not sure yet
-
-                break;
-
-            case 8: // strafe right to submersible
-
-                break;
-
-            case 9: // turn to face submersible
-
-                break;
-
-            case 10: // go back to case 3 first on repeat color drive forward
 
                 break;
 
@@ -338,7 +334,6 @@ public class lateSeasonAuton extends OpMode {
 
         telemetry.addData("Distance Right", distanceRight.getDistance(DistanceUnit.CM));
         telemetry.addData("Distance Left", distanceLeft.getDistance(DistanceUnit.CM));
-        telemetry.addData("Distance Side", distanceSide.getDistance(DistanceUnit.CM));
 
         telemetry.addLine();
 
@@ -349,7 +344,7 @@ public class lateSeasonAuton extends OpMode {
 
         telemetry.addLine();
 
-        telemetry.addData("Arm Encoder", armEncoder.getCurrentPosition());
+        telemetry.addData("Arm Encoder", -armEncoder.getCurrentPosition());
         telemetry.addData("Arm Length", slideEncoder.getCurrentPosition());
 
         telemetry.update();
@@ -382,14 +377,7 @@ public class lateSeasonAuton extends OpMode {
         rightBack.setPower(p-anglePow);
     }
 
-    private void clockwise (){
-        leftFront.setPower(anglePow);
-        leftBack.setPower(anglePow);
-        rightFront.setPower(-anglePow);
-        rightBack.setPower(-anglePow);
-    }
-
-    private void counterClockwise (){
+    private void turn (){
         leftFront.setPower(anglePow);
         leftBack.setPower(anglePow);
         rightFront.setPower(-anglePow);
@@ -417,33 +405,19 @@ public class lateSeasonAuton extends OpMode {
         double rightEncoderRawValue = -rightEncoder.getCurrentPosition();
         double backEncoderRawValue = -backEncoder.getCurrentPosition();
 
-        telemetry.addData("leftEncoderRawValue", leftEncoderRawValue);
-        telemetry.addData("rightEncoderRawValue", rightEncoderRawValue);
-        telemetry.addData("backEncoderRawValue", backEncoderRawValue);
-
         //calculate the change from previous position to current encoder position and convert to centimeters
         double leftEncoderChange = ((leftEncoderRawValue - previousLeftEncoderPosition) / countsPerRotation) * leftWheelCircumference;
         double rightEncoderChange = ((rightEncoderRawValue - previousRightEncoderPosition) / countsPerRotation) * rightWheelCircumference;
         double backEncoderChange = ((backEncoderRawValue - previousBackEncoderPosition) / countsPerRotation) * backWheelCircumference;
 
-        telemetry.addData("leftEncoderChange", leftEncoderChange);
-        telemetry.addData("rightEncoderChange", rightEncoderChange);
-        telemetry.addData("backEncoderChange", backEncoderChange);
-
         //find the change in robot angle by averageing both sides using subtraction due to opposite angles and then multiply by the radius to turn it into an angle
         double robotAngle = (leftEncoderChange - rightEncoderChange) / (trackWidth + trackWidthDelta);
-
-        telemetry.addData("robotAngle", robotAngle);
 
         //find the change in x center by averaging the left and right encoder values
         double xCenter = (leftEncoderChange + rightEncoderChange) / 2;
 
-        telemetry.addData("xCenter", xCenter);
-
         //find the change in x perpendicular by multiplying y offset by the robot angle and subtracting it from the back encoder
         double xPerpendicular = backEncoderChange - ((yOffset + yOffsetDelta) * robotAngle);
-
-        telemetry.addData("xPerpendicular", xPerpendicular);
 
         //relate the change in x center to our position on the field using trig
         double xChange =  xCenter * Math.cos(pose[2]) - xPerpendicular * Math.sin(pose[2]);
@@ -460,19 +434,15 @@ public class lateSeasonAuton extends OpMode {
         previousLeftEncoderPosition = leftEncoderRawValue;
         previousRightEncoderPosition = rightEncoderRawValue;
         previousBackEncoderPosition = backEncoderRawValue;
-
-        telemetry.addData("previousLeftEncoderPosition", previousLeftEncoderPosition);
-        telemetry.addData("previousRightEncoderPosition", previousRightEncoderPosition);
-        telemetry.addData("previousBackEncoderPosition", previousBackEncoderPosition);
     }
 
     private void robotAnglePID (){
         //PID on angle
-        angle = desAngle - Math.toDegrees(pose [2]);
-        anglePow = ((angle * OP) + (OI * (angle * (currentTime - previousTime))) + (OD * (angle - previousAngle) / (currentTime - previousTime)));
+        angleError = desAngle - Math.toDegrees(pose [2]);
+        anglePow = ((angleError * OP) + (OI * (angleError * (currentTime - previousTime))) + (OD * (angleError - previousAngleError) / (currentTime - previousTime)));
         if (anglePow > 0.7) anglePow = 0.7;
-        if  (anglePow< -0.7) anglePow = -0.7;
-        previousAngle = angle;
+        if  (anglePow < -0.7) anglePow = -0.7;
+        previousAngleError = angleError;
     }
 
     private void distanceDrive (){
@@ -515,14 +485,13 @@ public class lateSeasonAuton extends OpMode {
         if(slidePow < -0.6) slidePow = -0.6;
         if(slidePow > 0.6) slidePow = 0.6;
 
-        armLeft.setPower(slidePow);
-        armRight.setPower(slidePow);
+        armSlide.setPower(slidePow);
 
         previousLengthError = lengthError;
     }
 
     private void stepW(double buffer, double errorValue){
-        if (errorValue > buffer && wTimer.milliseconds() > 250){
+        if (Math.abs(errorValue) < buffer && wTimer.milliseconds() > 50){
             stepW++;
         } else {
             wTimer.reset();
@@ -530,7 +499,7 @@ public class lateSeasonAuton extends OpMode {
     }
 
     private void stepA(double buffer, double errorValue){
-        if (errorValue > buffer && aTimer.milliseconds() > 250){
+        if (Math.abs(errorValue) < buffer && aTimer.milliseconds() > 50){
             stepA++;
         } else {
             aTimer.reset();
