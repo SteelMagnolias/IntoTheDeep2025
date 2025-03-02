@@ -50,10 +50,10 @@ public class lateSeasonAuton extends OpMode {
     double previousTime;
 
     int stepW = 1;
-    int stepA = 0;
+    int stepA = 1;
     int stepR = 1;
 
-    double pow = 0.6;
+    double pow = 0.3;
     double armPow = 0.9;
     double slidePow = 0.9;
     double anglePow = 0;
@@ -124,7 +124,7 @@ public class lateSeasonAuton extends OpMode {
     double DD = 0.05;
 
     //odometry rotation PID
-    double OP = 0.04;
+    double OP = 0.06;
     double OI = 0;
     double OD = 0.5;
 
@@ -187,7 +187,7 @@ public class lateSeasonAuton extends OpMode {
         armSlide.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         //encoder set up
-        leftEncoder = leftFront;
+        leftEncoder = leftBack;
         rightEncoder = rightFront;
         backEncoder = rightBack;
 
@@ -206,11 +206,11 @@ public class lateSeasonAuton extends OpMode {
         colorRight = hardwareMap.get(ColorSensor.class, "colorRight");
 
         //set target
-        targetBlueRight = colorRight.blue() + 250;
-        targetRedRight = colorRight.red() + 250;
+        targetBlueRight = colorRight.blue() + 400;
+        targetRedRight = colorRight.red() + 400;
 
-        targetBlueLeft = colorLeft.blue() + 250;
-        targetRedLeft = colorLeft.red() + 250;
+        targetBlueLeft = colorLeft.blue() + 400;
+        targetRedLeft = colorLeft.red() + 400;
 
         telemetry.addLine("ready");
     }
@@ -223,36 +223,113 @@ public class lateSeasonAuton extends OpMode {
         robotAnglePID();
 
         switch (stepW) {
-            case 1: //drive forwards to pick up
-                driveForward(pow);
-                if (pose[0] > 53){
+            case 1:
+                    stepW++;
+                    wTimer.reset();
+                break;
+
+            case 2:
+                if (wTimer.milliseconds() > 2500){
+                    stepW++;
+                }
+                break;
+
+            case 3://drive forwards to pick up
+               driveForward(pow);
+                if (pose[0] > 52){
+                    drive(0,0,0,0);
+                    wTimer.reset();
+                    stepW++;
+                }
+                break;
+
+            case 4: // intake
+                intake.setPower(1);
+                if(wTimer.milliseconds() > 2500){
+                    intake.setPower(0.15);
+                    stepA++;
+                    stepW++;
+                }
+                break;
+
+            case 5:
+                driveBackwards(pow);
+                if (pose[0] < -60){
                     drive(0,0,0,0);
                     stepW++;
                 }
                 break;
 
-
-            case 10: // strafe right from wall
-                strafeRight(pow);
-                if(pose[1] < -17){
+            case 6: // strafe right from wall
+                strafeLeft(pow);
+                if(pose[1] > 17){
                     drive(0,0,0,0);
                     stepW++;
-                    desAngle = 45;
+                    desAngle = -90;
                 }
                 break;
 
-            case 12:// turn clockwise to face submersible
+            case 7:// turn clockwise to face submersible
                 turn();
                 stepW (bufferOT, angleError);
                 break;
 
-            case 13: // distance drive towards hang
-                desDis = 30;
+            case 8: // distance drive towards hang
+                desDis = 45;
                 distanceDrive();
+                stepW (bufferD, (distanceErrorLeft+distanceErrorRight)/2);
                 break;
 
-            case 4: // distance drive away from han
+            case 9: // distance drive away from han
+                driveForward(pow);
+                    if (pose[1] < -20) {
+                        stepW++;
+                        wTimer.reset();
+                        drive(0, 0, 0, 0);
+                    }
+                break;
 
+            case 10:
+                intake.setPower(-1);
+                if(wTimer.milliseconds() > 2500){
+                    intake.setPower(0);
+                    stepW++;
+                }
+            case 11:
+                if (wTimer.milliseconds() > 500){
+                    stepW++;
+                }
+                break;
+
+            case 12:
+                driveBackwards(pow);
+                if (pose[1] > 0){
+                    stepW++;
+                    drive(0,0,0,0);
+                    desAngle = 0;
+                }
+                break;
+
+            case 13:
+                turn();
+                stepW (bufferOT, angleError);
+                break;
+
+            case 14:
+                strafeRight(pow);
+                if(pose[1] < -35){
+                    stepW++;
+                    stepA++;
+                    drive(0,0,0,0);
+                }
+                break;
+
+            case 15:
+                driveForward(pow);
+                if(pose[0] > 40){
+                    drive(0,0,0,0);
+                    stepW++;
+                }
                 break;
 
             default:
@@ -262,29 +339,20 @@ public class lateSeasonAuton extends OpMode {
                 break;
         }
 
+        arm();
+        slide();
+
         switch (stepA) {
-            case 1: //extend wrist
-
+            case 1: //flip arm
+                desArmPos = 5100;
                 break;
 
-            case 2: // retract wrist
-
+            case 2: // lift arm
+                desArmPos = 4000;
                 break;
 
-            case 3: // arm hang position
-
-                break;
-
-            case 4: //arm pickup position
-
-                break;
-
-            case 5: // intake open
-
-                break;
-
-            case 6: // intake close
-
+            case 3: // arm in
+                desArmPos = 0;
                 break;
 
             default:
@@ -344,6 +412,13 @@ public class lateSeasonAuton extends OpMode {
 
         telemetry.addLine();
 
+        telemetry.addData("target left red", targetRedLeft);
+        telemetry.addData("target left Blue", targetBlueLeft);
+        telemetry.addData("target right red", targetRedRight);
+        telemetry.addData("target right blue", targetBlueRight);
+
+        telemetry.addLine();
+
         telemetry.addData("Arm Encoder", -armEncoder.getCurrentPosition());
         telemetry.addData("Arm Length", slideEncoder.getCurrentPosition());
 
@@ -386,9 +461,9 @@ public class lateSeasonAuton extends OpMode {
 
     private void drive (double dfl, double dbl, double dfr, double dbr){
         leftFront.setPower(dfl+anglePow);
-        leftBack.setPower(dbl+anglePow);
         rightFront.setPower(dfr-anglePow);
         rightBack.setPower(dbr-anglePow);
+        leftBack.setPower(dbl+anglePow);
     }
 
     private void arm(double ap, double alp) {
@@ -500,7 +575,9 @@ public class lateSeasonAuton extends OpMode {
 
     private void stepA(double buffer, double errorValue){
         if (Math.abs(errorValue) < buffer && aTimer.milliseconds() > 50){
+            stepW++;
             stepA++;
+
         } else {
             aTimer.reset();
         }
