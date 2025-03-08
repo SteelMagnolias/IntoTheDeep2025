@@ -147,7 +147,155 @@ public class odometryTuning extends OpMode {
                     step++;
                 }
                 break;
+
             case 11:
+                counterClockwise();
+                desAngle = 90;
+                if (pose[2] <= Math.toRadians(desAngle)) {
+                    drive(0,0,0,0);
+                    step++;
+                }
+                break;
+
+            case 13:
+                strafeLeft(pow);
+                if (pose[0] < -40){
+                    drive(0,0,0,0);
+                    step++;
+                }
+                break;
+
+            case 15:
+                strafeRight(pow);
+                if (pose[0] > 0) {
+                    drive(0,0,0,0);
+                    step++;
+                }
+                break;
+
+            case 17:
+                driveBackwards(pow);
+                if(pose[1] < -40){
+                    drive(0,0,0,0);
+                    step++;
+                }
+                break;
+
+            case 19:
+                driveForward(pow);
+                if (pose[1] > 0){
+                    drive(0,0,0,0);
+                    step++;
+                }
+                break;
+
+            case 21:
+                clockwise();
+                desAngle = 360;
+                if (pose[2] >= Math.toRadians(desAngle)) {
+                    drive(0,0,0,0);
+                    step++;
+                }
+                break;
+
+            case 23:
+                counterClockwise();
+                desAngle = 180;
+                if (pose[2] <= Math.toRadians(desAngle)) {
+                    drive(0,0,0,0);
+                    step++;
+                }
+                break;
+
+            case 25:
+                driveBackwards(pow);
+                if (pose[0] >= 40) {
+                    drive(0,0,0,0);
+                    step++;
+                }
+                break;
+            case 27:
+                driveForward(pow);
+                if (pose[0] <= 0) {
+                    drive(0,0,0,0);
+                    step++;
+                }
+                break;
+            case 29:
+                strafeRight(pow);
+                if (pose[1] >= 40) {
+                    drive(0,0,0,0);
+                    step++;
+                }
+                break;
+            case 31:
+                strafeLeft(pow);
+                if (pose[1] <= 0) {
+                    drive(0,0,0,0);
+                    step++;
+                }
+                break;
+
+            case 33:
+                clockwise();
+                desAngle = 360;
+                if (pose[2] >= Math.toRadians(desAngle)) {
+                    drive(0,0,0,0);
+                    step++;
+                }
+                break;
+
+            case 35:
+                counterClockwise();
+                desAngle = 270;
+                if (pose[2] <= Math.toRadians(desAngle)) {
+                    drive(0,0,0,0);
+                    step++;
+                }
+                break;
+
+            case 37:
+                strafeRight(pow);
+                if (pose[0] < -40){
+                    drive(0,0,0,0);
+                    step++;
+                }
+                break;
+
+            case 39:
+                strafeLeft(pow);
+                if (pose[0] > 0) {
+                    drive(0,0,0,0);
+                    step++;
+                }
+                break;
+
+            case 41:
+                driveForward(pow);
+                if(pose[1] < -40){
+                    drive(0,0,0,0);
+                    step++;
+                }
+                break;
+
+            case 43:
+                driveBackwards(pow);
+                if (pose[1] > 0){
+                    drive(0,0,0,0);
+                    step++;
+                }
+                break;
+
+            case 45:
+                clockwise();
+                desAngle = 360;
+                if (pose[2] >= Math.toRadians(desAngle)) {
+                    drive(0,0,0,0);
+                    step++;
+                }
+                break;
+
+            case 47:
                 counterClockwise();
                 desAngle = 0;
                 if (pose[2] <= Math.toRadians(desAngle)) {
@@ -155,6 +303,7 @@ public class odometryTuning extends OpMode {
                     step++;
                 }
                 break;
+
             default:
                 drive(0, 0, 0, 0);
                 stop();
@@ -215,7 +364,6 @@ public class odometryTuning extends OpMode {
         double xCenter = (leftEncoderChange + rightEncoderChange) / 2;
 
         telemetry.addData("xCenter", xCenter);
-
         //find the change in x perpendicular by multiplying y offset by the robot angle and subtracting it from the back encoder
         double xPerpendicular = backEncoderChange - ((yOffset + yOffsetDelta) * robotAngle);
 

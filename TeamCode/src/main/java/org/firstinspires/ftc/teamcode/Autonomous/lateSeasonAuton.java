@@ -44,10 +44,10 @@ public class lateSeasonAuton extends OpMode {
     ElapsedTime PIDTimer = new ElapsedTime();
     ElapsedTime wTimer = new ElapsedTime();
     ElapsedTime aTimer = new ElapsedTime();
-    ElapsedTime intakeTimer = new ElapsedTime();
 
-    double currentTime;
-    double previousTime;
+    double currentTime = 0;
+    double previousTime = 0;
+    double alteredTime = 0;
 
     int stepW = 1;
     int stepA = 1;
@@ -217,10 +217,11 @@ public class lateSeasonAuton extends OpMode {
 
     @Override
     public void loop() {
-        currentTime = PIDTimer.milliseconds();
-
-        runOdometry();
-        robotAnglePID();
+        currentTime = PIDTimer.milliseconds() - alteredTime;
+        if(stepW < 8 || stepW > 13){
+            runOdometry();
+            robotAnglePID();
+        }
 
         switch (stepW) {
             case 1:
@@ -274,48 +275,48 @@ public class lateSeasonAuton extends OpMode {
                 stepW (bufferOT, angleError);
                 break;
 
-            case 8: // distance drive towards hang
+            case 8:
+                alteredTime = currentTime;
+                stepW++;
+                break;
+
+            case 9: // distance drive towards hang
                 desDis = 45;
                 distanceDrive();
                 stepW (bufferD, (distanceErrorLeft+distanceErrorRight)/2);
                 break;
 
-            case 9: // distance drive away from han
-                driveForward(pow);
-                    if (pose[1] < -20) {
-                        stepW++;
-                        wTimer.reset();
-                        drive(0, 0, 0, 0);
-                    }
+            case 10: // distance drive away from han
+                desDis = 20;
+                distanceDrive();
+                stepW(bufferD, (distanceErrorLeft+distanceErrorRight)/2);
                 break;
 
-            case 10:
+            case 11:
                 intake.setPower(-1);
                 if(wTimer.milliseconds() > 2500){
                     intake.setPower(0);
                     stepW++;
                 }
-            case 11:
+            case 12:
                 if (wTimer.milliseconds() > 500){
                     stepW++;
                 }
                 break;
 
-            case 12:
-                driveBackwards(pow);
-                if (pose[1] > 0){
-                    stepW++;
-                    drive(0,0,0,0);
-                    desAngle = 0;
-                }
+            case 13:
+                desDis = 50;
+                distanceDrive();
+                stepW(bufferD, (distanceErrorLeft+distanceErrorRight)/2);
+                desAngle = 0;
                 break;
 
-            case 13:
+            case 14:
                 turn();
                 stepW (bufferOT, angleError);
                 break;
 
-            case 14:
+            case 15:
                 strafeRight(pow);
                 if(pose[1] < -35){
                     stepW++;
@@ -324,7 +325,7 @@ public class lateSeasonAuton extends OpMode {
                 }
                 break;
 
-            case 15:
+            case 16:
                 driveForward(pow);
                 if(pose[0] > 40){
                     drive(0,0,0,0);
