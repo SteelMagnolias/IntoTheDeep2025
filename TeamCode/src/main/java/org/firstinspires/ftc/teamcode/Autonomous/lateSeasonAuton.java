@@ -47,13 +47,12 @@ public class lateSeasonAuton extends OpMode {
 
     double currentTime = 0;
     double previousTime = 0;
-    double alteredTime = 0;
 
     int stepW = 1;
     int stepA = 1;
     int stepR = 1;
 
-    double pow = 0.3;
+    double pow = 0.5;
     double armPow = 0.9;
     double slidePow = 0.9;
     double anglePow = 0;
@@ -75,6 +74,7 @@ public class lateSeasonAuton extends OpMode {
     double desDis;
     double disLeft;
     double disRight;
+    double turnDis;
 
     //arm
     double armError = 0;
@@ -196,7 +196,7 @@ public class lateSeasonAuton extends OpMode {
 
         previousLeftEncoderPosition = leftEncoder.getCurrentPosition();
         previousRightEncoderPosition = -rightEncoder.getCurrentPosition();
-        previousBackEncoderPosition = -backEncoder.getCurrentPosition();
+        previousBackEncoderPosition = backEncoder.getCurrentPosition();
 
         //sensors
         distanceLeft = hardwareMap.get(DistanceSensor.class, "distanceLeft");
@@ -217,26 +217,25 @@ public class lateSeasonAuton extends OpMode {
 
     @Override
     public void loop() {
-        currentTime = PIDTimer.milliseconds() - alteredTime;
-        if(stepW < 8 || stepW > 13){
-            runOdometry();
-            robotAnglePID();
-        }
+        currentTime = PIDTimer.milliseconds();
+
+        runOdometry();
+        robotAnglePID();
 
         switch (stepW) {
             case 1:
-                    stepW++;
-                    wTimer.reset();
+                stepW++;
+                wTimer.reset();
                 break;
 
             case 2:
-                if (wTimer.milliseconds() > 2500){
+                if (wTimer.milliseconds() > 2750){
                     stepW++;
                 }
                 break;
 
             case 3://drive forwards to pick up
-               driveForward(pow);
+                driveForward(pow);
                 if (pose[0] > 52){
                     drive(0,0,0,0);
                     wTimer.reset();
@@ -246,7 +245,7 @@ public class lateSeasonAuton extends OpMode {
 
             case 4: // intake
                 intake.setPower(1);
-                if(wTimer.milliseconds() > 2500){
+                if(wTimer.milliseconds() > 2000){
                     intake.setPower(0.15);
                     stepA++;
                     stepW++;
@@ -255,15 +254,22 @@ public class lateSeasonAuton extends OpMode {
 
             case 5:
                 driveBackwards(pow);
-                if (pose[0] < -60){
-                    drive(0,0,0,0);
-                    stepW++;
+                if(stepR == 1) {
+                    if (pose[0] < -65) {
+                        drive(0, 0, 0, 0);
+                        stepW++;
+                    }
+                } else {
+                    if (pose[0] < -55) {
+                        drive(0, 0, 0, 0);
+                        stepW++;
+                    }
                 }
                 break;
 
             case 6: // strafe right from wall
                 strafeLeft(pow);
-                if(pose[1] > 17){
+                if(pose[1] < -17){
                     drive(0,0,0,0);
                     stepW++;
                     desAngle = -90;
@@ -275,59 +281,65 @@ public class lateSeasonAuton extends OpMode {
                 stepW (bufferOT, angleError);
                 break;
 
-            case 8:
-                alteredTime = currentTime;
-                stepW++;
-                break;
-
-            case 9: // distance drive towards hang
+            case 8: // distance drive towards hang
                 desDis = 45;
                 distanceDrive();
                 stepW (bufferD, (distanceErrorLeft+distanceErrorRight)/2);
                 break;
 
-            case 10: // distance drive away from han
-                desDis = 20;
-                distanceDrive();
-                stepW(bufferD, (distanceErrorLeft+distanceErrorRight)/2);
+            case 9: // distance drive away from han
+                driveForward(pow);
+                if (pose[1] < -70) {
+                    stepW++;
+                    wTimer.reset();
+                    drive(0, 0, 0, 0);
+                }
                 break;
 
-            case 11:
+            case 10:
                 intake.setPower(-1);
                 if(wTimer.milliseconds() > 2500){
                     intake.setPower(0);
                     stepW++;
                 }
-            case 12:
+            case 11:
                 if (wTimer.milliseconds() > 500){
                     stepW++;
                 }
                 break;
 
-            case 13:
-                desDis = 50;
-                distanceDrive();
-                stepW(bufferD, (distanceErrorLeft+distanceErrorRight)/2);
-                desAngle = 0;
+            case 12:
+                driveBackwards(pow);
+                if (pose[1] > -17){
+                    stepW++;
+                    drive(0,0,0,0);
+                    desAngle = 0;
+                }
                 break;
 
-            case 14:
+            case 13:
                 turn();
                 stepW (bufferOT, angleError);
                 break;
 
-            case 15:
+            case 14:
                 strafeRight(pow);
-                if(pose[1] < -35){
-                    stepW++;
-                    stepA++;
+                if(pose[1] > -5){
+                    if (stepR == 1) {
+                        stepW = 3;
+                        stepA = 1;
+                        stepR++;
+                    } else {
+                        stepW++;
+                        stepA++;
+                    }
                     drive(0,0,0,0);
                 }
                 break;
 
-            case 16:
+            case 15:
                 driveForward(pow);
-                if(pose[0] > 40){
+                if(pose[0] > 50){
                     drive(0,0,0,0);
                     stepW++;
                 }
@@ -403,6 +415,7 @@ public class lateSeasonAuton extends OpMode {
 
         telemetry.addData("Distance Right", distanceRight.getDistance(DistanceUnit.CM));
         telemetry.addData("Distance Left", distanceLeft.getDistance(DistanceUnit.CM));
+        telemetry.addData("turn Distance", turnDis);
 
         telemetry.addLine();
 
@@ -479,7 +492,7 @@ public class lateSeasonAuton extends OpMode {
         //current encoder ticks
         double leftEncoderRawValue = leftEncoder.getCurrentPosition();
         double rightEncoderRawValue = -rightEncoder.getCurrentPosition();
-        double backEncoderRawValue = -backEncoder.getCurrentPosition();
+        double backEncoderRawValue = backEncoder.getCurrentPosition();
 
         //calculate the change from previous position to current encoder position and convert to centimeters
         double leftEncoderChange = ((leftEncoderRawValue - previousLeftEncoderPosition) / countsPerRotation) * leftWheelCircumference;

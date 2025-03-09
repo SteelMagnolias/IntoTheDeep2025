@@ -126,14 +126,14 @@ public class odometryTuning extends OpMode {
                 }
                 break;
             case 5:
-                strafeLeft(pow);
+                strafeRight(pow);
                 if (pose[1] >= 40) {
                     drive(0,0,0,0);
                     step++;
                 }
                 break;
             case 7:
-                strafeRight(pow);
+                strafeLeft(pow);
                 if (pose[1] <= 0) {
                     drive(0,0,0,0);
                     step++;
@@ -158,7 +158,7 @@ public class odometryTuning extends OpMode {
                 break;
 
             case 13:
-                strafeLeft(pow);
+                strafeRight(pow);
                 if (pose[0] < -40){
                     drive(0,0,0,0);
                     step++;
@@ -166,7 +166,7 @@ public class odometryTuning extends OpMode {
                 break;
 
             case 15:
-                strafeRight(pow);
+                strafeLeft(pow);
                 if (pose[0] > 0) {
                     drive(0,0,0,0);
                     step++;
@@ -174,16 +174,16 @@ public class odometryTuning extends OpMode {
                 break;
 
             case 17:
-                driveBackwards(pow);
-                if(pose[1] < -40){
+                driveForward(pow);
+                if(pose[1] > 40){
                     drive(0,0,0,0);
                     step++;
                 }
                 break;
 
             case 19:
-                driveForward(pow);
-                if (pose[1] > 0){
+                driveBackwards(pow);
+                if (pose[1] < 0){
                     drive(0,0,0,0);
                     step++;
                 }
@@ -222,14 +222,14 @@ public class odometryTuning extends OpMode {
                 }
                 break;
             case 29:
-                strafeRight(pow);
+                strafeLeft(pow);
                 if (pose[1] >= 40) {
                     drive(0,0,0,0);
                     step++;
                 }
                 break;
             case 31:
-                strafeLeft(pow);
+                strafeRight(pow);
                 if (pose[1] <= 0) {
                     drive(0,0,0,0);
                     step++;
@@ -255,7 +255,7 @@ public class odometryTuning extends OpMode {
                 break;
 
             case 37:
-                strafeRight(pow);
+                strafeLeft(pow);
                 if (pose[0] < -40){
                     drive(0,0,0,0);
                     step++;
@@ -263,7 +263,7 @@ public class odometryTuning extends OpMode {
                 break;
 
             case 39:
-                strafeLeft(pow);
+                strafeRight(pow);
                 if (pose[0] > 0) {
                     drive(0,0,0,0);
                     step++;
@@ -271,16 +271,16 @@ public class odometryTuning extends OpMode {
                 break;
 
             case 41:
-                driveForward(pow);
-                if(pose[1] < -40){
+                driveBackwards(pow);
+                if(pose[1] > 40){
                     drive(0,0,0,0);
                     step++;
                 }
                 break;
 
             case 43:
-                driveBackwards(pow);
-                if (pose[1] > 0){
+                driveForward(pow);
+                if (pose[1] < 0){
                     drive(0,0,0,0);
                     step++;
                 }
@@ -340,7 +340,7 @@ public class odometryTuning extends OpMode {
         //current encoder ticks
         double leftEncoderRawValue = leftEncoder.getCurrentPosition();
         double rightEncoderRawValue = -rightEncoder.getCurrentPosition();
-        double backEncoderRawValue = -backEncoder.getCurrentPosition();
+        double backEncoderRawValue = backEncoder.getCurrentPosition();
 
         telemetry.addData("leftEncoderRawValue", leftEncoderRawValue);
         telemetry.addData("rightEncoderRawValue", rightEncoderRawValue);
