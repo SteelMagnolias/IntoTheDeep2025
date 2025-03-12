@@ -10,8 +10,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
-@Autonomous(name = "lateSeasonAuton", group = "Iterative OpMode")
-public class lateSeasonAuton extends OpMode {
+@Autonomous(name = "netZoneStates", group = "Iterative OpMode")
+public class netZoneStates extends OpMode {
 
     // motors & servos
     private DcMotor leftFront;
@@ -223,126 +223,56 @@ public class lateSeasonAuton extends OpMode {
         robotAnglePID();
 
         switch (stepW) {
-            case 1:
-                stepW++;
-                wTimer.reset();
+            case 1: // strafe away from wall
+
                 break;
 
-            case 2:
-                if (wTimer.milliseconds() > 2750){
-                    stepW++;
-                }
+            case 2: // drive forward
+
                 break;
 
-            case 3://drive forwards to pick up
-                driveForward(pow);
-                if (pose[0] > 52){
-                    drive(0,0,0,0);
-                    wTimer.reset();
-                    stepW++;
-                }
+            case 3: // turn to 45 deg
+
                 break;
 
-            case 4: // intake
-                intake.setPower(1);
-                if(wTimer.milliseconds() > 2000){
-                    intake.setPower(0.15);
-                    stepA++;
-                    stepW++;
-                }
+            case 4: // wait for arm
+
                 break;
 
-            case 5:
-                driveBackwards(pow);
-                if(stepR == 1) {
-                    if (pose[0] < -65) {
-                        drive(0, 0, 0, 0);
-                        stepW++;
-                    }
-                } else {
-                    if (pose[0] < -55) {
-                        drive(0, 0, 0, 0);
-                        stepW++;
-                    }
-                }
+            case 5: // turn
+
                 break;
 
-            case 6: // strafe right from wall
-                strafeLeft(pow);
-                if(pose[1] < -17){
-                    drive(0,0,0,0);
-                    stepW++;
-                    desAngle = -90;
-                }
+            case 6: // strafe to line up with block
+
                 break;
 
-            case 7:// turn clockwise to face submersible
-                turn();
-                stepW (bufferOT, angleError);
+            case 7: // arm stuff
+
                 break;
 
-            case 8: // distance drive towards hang
-                desDis = 45;
-                distanceDrive();
-                stepW (bufferD, (distanceErrorLeft+distanceErrorRight)/2);
+            case 8: // strafe back to priot position
+
                 break;
 
-            case 9: // distance drive away from han
-                driveForward(pow);
-                if (pose[1] < -70) {
-                    stepW++;
-                    wTimer.reset();
-                    drive(0, 0, 0, 0);
-                }
+            case 9: // wait for arm stuff
+
                 break;
 
-            case 10:
-                intake.setPower(-1);
-                if(wTimer.milliseconds() > 2500){
-                    intake.setPower(0);
-                    stepW++;
-                }
-            case 11:
-                if (wTimer.milliseconds() > 500){
-                    stepW++;
-                }
+            case 10: // turn
+
                 break;
 
-            case 12:
-                driveBackwards(pow);
-                if (pose[1] > -17){
-                    stepW++;
-                    drive(0,0,0,0);
-                    desAngle = 0;
-                }
+            case 11: // strafe to wall
+
                 break;
 
-            case 13:
-                turn();
-                stepW (bufferOT, angleError);
+            case 12: //wait for like 3 secs left
+
                 break;
 
-            case 14:
-                strafeRight(pow);
-                if(pose[1] > -5){
-                    if (stepR == 1) {
-                        stepW = 3;
-                        stepA = 1;
-                        stepR++;
-                    } else {
-                        stepW++;
-                        stepA++;
-                    }
-                    drive(0,0,0,0);
-                }
-                break;
+            case 13: //drive to observation zone to park
 
-            case 15:
-                driveForward(pow);
-                if(pose[0] > 50){
-                    drive(0,0,0,0);
-                    stepW++;
-                }
                 break;
 
             default:
@@ -356,16 +286,40 @@ public class lateSeasonAuton extends OpMode {
         slide();
 
         switch (stepA) {
-            case 1: //flip arm
-                desArmPos = 5100;
+            case 1: //lift arm
+
                 break;
 
-            case 2: // lift arm
-                desArmPos = 4000;
+            case 2: // put wrist in place
+
                 break;
 
-            case 3: // arm in
-                desArmPos = 0;
+            case 3: //drop block
+
+                break;
+
+            case 4: //lower arm on block
+
+                break;
+
+            case 5: // grab block
+
+                break;
+
+            case 6: //lift arm
+
+                break;
+
+            case 7: //drop block
+
+                break;
+
+            case 8: // retract wrist
+
+                break;
+
+            case 9: // lower arm
+
                 break;
 
             default:
