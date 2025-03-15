@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.Autonomous;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
@@ -11,9 +10,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
-@Disabled
-@Autonomous(name = "autonTest", group = "Iterative OpMode")
-public class autonTest extends OpMode {
+@Autonomous(name = "netZoneStatesPark", group = "Iterative OpMode")
+public class netZoneStatesPark extends OpMode {
 
     // motors & servos
     private DcMotor leftFront;
@@ -36,7 +34,6 @@ public class autonTest extends OpMode {
     private DcMotor backEncoder;
 
     //sensors
-    private DistanceSensor distanceSide;
     private DistanceSensor distanceLeft;
     private DistanceSensor distanceRight;
 
@@ -47,15 +44,15 @@ public class autonTest extends OpMode {
     ElapsedTime PIDTimer = new ElapsedTime();
     ElapsedTime wTimer = new ElapsedTime();
     ElapsedTime aTimer = new ElapsedTime();
-    ElapsedTime intakeTimer = new ElapsedTime();
 
-    double currentTime;
-    double previousTime;
+    double currentTime = 0;
+    double previousTime = 0;
 
     int stepW = 1;
     int stepA = 1;
+    int stepR = 1;
 
-    double pow = 0.6;
+    double pow = 0.4;
     double armPow = 0.9;
     double slidePow = 0.9;
     double anglePow = 0;
@@ -77,6 +74,7 @@ public class autonTest extends OpMode {
     double desDis;
     double disLeft;
     double disRight;
+    double turnDis;
 
     //arm
     double armError = 0;
@@ -90,9 +88,9 @@ public class autonTest extends OpMode {
     double armLength;
 
     //odometry
-    double angle;
+    double angleError;
     double desAngle = 0;
-    double previousAngle = 0;
+    double previousAngleError = 0;
 
     double trackWidth = 36.75; //centimeters
     double yOffset = 3.75; //centimeters
@@ -112,7 +110,7 @@ public class autonTest extends OpMode {
 
     //tuning variables
     //arm PIDs
-    double AP = 0.0015;
+    double AP = 0.001;
     double AI = 0.000005;
     double AD = 0.005;
 
@@ -121,13 +119,13 @@ public class autonTest extends OpMode {
     double SD = 0;
 
     //distance PID
-    double DP = 0.01;
-    double DI = 0.0005;
+    double DP = 0.04;
+    double DI = 0.00000005;
     double DD = 0.05;
 
     //odometry rotation PID
-    double OP = 0.07;
-    double OI = 0.0005;
+    double OP = 0.06;
+    double OI = 0;
     double OD = 0.5;
 
     //other variables
@@ -153,21 +151,7 @@ public class autonTest extends OpMode {
 
         intake = hardwareMap.get(CRServo.class, "intake");
 
-        //encoder set up
-        leftEncoder = leftFront;
-        rightEncoder = rightFront;
-        backEncoder = rightBack;
-        armEncoder = armLeft;
-        slideEncoder = armSlide;
-
-        leftEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        rightEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        backEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-        armEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        slideEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-        //motor set up
+        //reversals
         rightBack.setDirection(DcMotor.Direction.REVERSE);
 
         armSlide.setDirection(DcMotor.Direction.REVERSE);
@@ -175,6 +159,14 @@ public class autonTest extends OpMode {
         armRight.setDirection(DcMotor.Direction.REVERSE);
 
         intake.setDirection(DcMotor.Direction.REVERSE);
+
+        //motor set up
+        leftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        armLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        armSlide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         leftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -194,8 +186,19 @@ public class autonTest extends OpMode {
         armRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         armSlide.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
+        //encoder set up
+        leftEncoder = leftBack;
+        rightEncoder = rightFront;
+        backEncoder = rightBack;
+
+        armEncoder = armLeft;
+        slideEncoder = armSlide;
+
+        previousLeftEncoderPosition = leftEncoder.getCurrentPosition();
+        previousRightEncoderPosition = -rightEncoder.getCurrentPosition();
+        previousBackEncoderPosition = backEncoder.getCurrentPosition();
+
         //sensors
-        distanceSide = hardwareMap.get(DistanceSensor.class, "distanceLeft");
         distanceLeft = hardwareMap.get(DistanceSensor.class, "distanceLeft");
         distanceRight = hardwareMap.get(DistanceSensor.class, "distanceRight");
 
@@ -203,24 +206,91 @@ public class autonTest extends OpMode {
         colorRight = hardwareMap.get(ColorSensor.class, "colorRight");
 
         //set target
-        targetBlueRight = colorRight.blue() + 250;
-        targetRedRight = colorRight.red() + 250;
+        targetBlueRight = colorRight.blue() + 400;
+        targetRedRight = colorRight.red() + 400;
 
-        targetBlueLeft = colorLeft.blue() + 250;
-        targetRedLeft = colorLeft.red() + 250;
+        targetBlueLeft = colorLeft.blue() + 400;
+        targetRedLeft = colorLeft.red() + 400;
+
+        intake.setPower(0.15);
+
+        telemetry.addLine("ready");
     }
 
     @Override
     public void loop() {
+        currentTime = PIDTimer.milliseconds();
 
         runOdometry();
         robotAnglePID();
 
-        currentTime = PIDTimer.milliseconds();
-
         switch (stepW) {
-            case 1:
+            case 1: // strafe away from wall
+                strafeRight(pow);
+                if(pose[1] > 17){
+                    drive(0,0,0,0);
+                    stepW++;
+                }
+                break;
 
+            case 2: // drive forward
+                driveForward(0.3);
+                if(pose[0] > 30){
+                    drive(0,0,0,0);
+                    stepW++;
+                    desAngle = -45;
+                }
+                break;
+
+            case 3: // turn to 45 deg
+                turn();
+                stepA(bufferOT, angleError);
+                stepW(bufferOT, angleError);
+                break;
+
+            case 4: // wait for arm
+                drive(0,0,0,0);
+                break;
+
+            case 5: // turn
+                desAngle = 0;
+                stepW++;
+                break;
+
+            case 6: // strafe to line up with block
+                turn();
+                stepW(bufferOT, angleError);
+                break;
+
+            case 7: // arm stuff
+                driveBackwards(pow);
+                if(pose[0] < 0){
+                    drive (0,0,0,0);
+                    stepW++;
+                }
+                break;
+
+            case 8: // strafe back to priot position
+                strafeLeft(pow);
+                if(pose [1] < 3){
+                    drive(0,0,0,0);
+                    stepW++;
+                }
+                break;
+
+            case 9: // wait for arm stuff
+                drive(0,0,0,0);
+                if(PIDTimer.milliseconds() > 27500){
+                    stepW++;
+                }
+                break;
+
+            case 10: // turn
+                driveBackwards(pow);
+                if(pose[0] < -175){
+                    drive(0,0,0,0);
+                    stepW++;
+                }
                 break;
 
             default:
@@ -229,10 +299,55 @@ public class autonTest extends OpMode {
 
                 break;
         }
+        if(stepA < 3 || stepA > 4) {
+            arm();
+        }
+
+        if (stepA < 5) {
+            slide();
+        }
 
         switch (stepA) {
-            case 1:
+            case 1: //lift arm
+                desArmPos = 2250;
+                stepA(bufferA, armError);
+                break;
 
+            case 2: // put wrist in place
+                    desLength = -5000;
+                break;
+
+            case 3: //drop block
+                armLeft.setPower(-0.5);
+                armRight.setPower(-0.5);
+                if(armEncoder.getCurrentPosition() < -3500){
+                    stepA++;
+                    armLeft.setPower(0);
+                    armRight.setPower(0);
+                }
+                break;
+
+            case 4: //lower arm on block
+                intake.setPower(-1);
+                if(wTimer.milliseconds() > 2500){
+                    intake.setPower(0);
+                    stepA++;
+                    aTimer.reset();
+                }
+                break;
+
+            case 5: // grab block
+                armSlide.setPower(-0.3);
+                if(slideEncoder.getCurrentPosition() > -150 || aTimer.milliseconds() > 2500){
+                    stepA++;
+                    armSlide.setPower(-0.15);
+                }
+                break;
+
+            case 6: //lift arm
+                desArmPos = 0;
+                stepW(bufferA, armError);
+                stepA(bufferA, armError);
                 break;
 
             default:
@@ -282,7 +397,7 @@ public class autonTest extends OpMode {
 
         telemetry.addData("Distance Right", distanceRight.getDistance(DistanceUnit.CM));
         telemetry.addData("Distance Left", distanceLeft.getDistance(DistanceUnit.CM));
-        telemetry.addData("Distance Side", distanceSide.getDistance(DistanceUnit.CM));
+        telemetry.addData("turn Distance", turnDis);
 
         telemetry.addLine();
 
@@ -293,7 +408,14 @@ public class autonTest extends OpMode {
 
         telemetry.addLine();
 
-        telemetry.addData("Arm Encoder", armEncoder.getCurrentPosition());
+        telemetry.addData("target left red", targetRedLeft);
+        telemetry.addData("target left Blue", targetBlueLeft);
+        telemetry.addData("target right red", targetRedRight);
+        telemetry.addData("target right blue", targetBlueRight);
+
+        telemetry.addLine();
+
+        telemetry.addData("Arm Encoder", -armEncoder.getCurrentPosition());
         telemetry.addData("Arm Length", slideEncoder.getCurrentPosition());
 
         telemetry.update();
@@ -326,14 +448,7 @@ public class autonTest extends OpMode {
         rightBack.setPower(p-anglePow);
     }
 
-    private void clockwise (){
-        leftFront.setPower(anglePow);
-        leftBack.setPower(anglePow);
-        rightFront.setPower(-anglePow);
-        rightBack.setPower(-anglePow);
-    }
-
-    private void counterClockwise (){
+    private void turn (){
         leftFront.setPower(anglePow);
         leftBack.setPower(anglePow);
         rightFront.setPower(-anglePow);
@@ -342,9 +457,9 @@ public class autonTest extends OpMode {
 
     private void drive (double dfl, double dbl, double dfr, double dbr){
         leftFront.setPower(dfl+anglePow);
-        leftBack.setPower(dbl+anglePow);
         rightFront.setPower(dfr-anglePow);
         rightBack.setPower(dbr-anglePow);
+        leftBack.setPower(dbl+anglePow);
     }
 
     private void arm(double ap, double alp) {
@@ -359,35 +474,21 @@ public class autonTest extends OpMode {
         //current encoder ticks
         double leftEncoderRawValue = leftEncoder.getCurrentPosition();
         double rightEncoderRawValue = -rightEncoder.getCurrentPosition();
-        double backEncoderRawValue = -backEncoder.getCurrentPosition();
-
-        telemetry.addData("leftEncoderRawValue", leftEncoderRawValue);
-        telemetry.addData("rightEncoderRawValue", rightEncoderRawValue);
-        telemetry.addData("backEncoderRawValue", backEncoderRawValue);
+        double backEncoderRawValue = backEncoder.getCurrentPosition();
 
         //calculate the change from previous position to current encoder position and convert to centimeters
         double leftEncoderChange = ((leftEncoderRawValue - previousLeftEncoderPosition) / countsPerRotation) * leftWheelCircumference;
         double rightEncoderChange = ((rightEncoderRawValue - previousRightEncoderPosition) / countsPerRotation) * rightWheelCircumference;
         double backEncoderChange = ((backEncoderRawValue - previousBackEncoderPosition) / countsPerRotation) * backWheelCircumference;
 
-        telemetry.addData("leftEncoderChange", leftEncoderChange);
-        telemetry.addData("rightEncoderChange", rightEncoderChange);
-        telemetry.addData("backEncoderChange", backEncoderChange);
-
         //find the change in robot angle by averageing both sides using subtraction due to opposite angles and then multiply by the radius to turn it into an angle
         double robotAngle = (leftEncoderChange - rightEncoderChange) / (trackWidth + trackWidthDelta);
-
-        telemetry.addData("robotAngle", robotAngle);
 
         //find the change in x center by averaging the left and right encoder values
         double xCenter = (leftEncoderChange + rightEncoderChange) / 2;
 
-        telemetry.addData("xCenter", xCenter);
-
         //find the change in x perpendicular by multiplying y offset by the robot angle and subtracting it from the back encoder
         double xPerpendicular = backEncoderChange - ((yOffset + yOffsetDelta) * robotAngle);
-
-        telemetry.addData("xPerpendicular", xPerpendicular);
 
         //relate the change in x center to our position on the field using trig
         double xChange =  xCenter * Math.cos(pose[2]) - xPerpendicular * Math.sin(pose[2]);
@@ -404,19 +505,15 @@ public class autonTest extends OpMode {
         previousLeftEncoderPosition = leftEncoderRawValue;
         previousRightEncoderPosition = rightEncoderRawValue;
         previousBackEncoderPosition = backEncoderRawValue;
-
-        telemetry.addData("previousLeftEncoderPosition", previousLeftEncoderPosition);
-        telemetry.addData("previousRightEncoderPosition", previousRightEncoderPosition);
-        telemetry.addData("previousBackEncoderPosition", previousBackEncoderPosition);
     }
 
     private void robotAnglePID (){
         //PID on angle
-        angle = desAngle - Math.toDegrees(pose [2]);
-        anglePow = ((angle * OP) + (OI * (angle * (currentTime - previousTime))) + (OD * (angle - previousAngle) / (currentTime - previousTime)));
+        angleError = desAngle - Math.toDegrees(pose [2]);
+        anglePow = ((angleError * OP) + (OI * (angleError * (currentTime - previousTime))) + (OD * (angleError - previousAngleError) / (currentTime - previousTime)));
         if (anglePow > 0.7) anglePow = 0.7;
-        if  (anglePow< -0.7) anglePow = -0.7;
-        previousAngle = angle;
+        if  (anglePow < -0.7) anglePow = -0.7;
+        previousAngleError = angleError;
     }
 
     private void distanceDrive (){
@@ -429,13 +526,13 @@ public class autonTest extends OpMode {
         double powLeft = ((distanceErrorLeft * DP) + (DI * (distanceErrorLeft * (currentTime - previousTime))) + (DD * (distanceErrorLeft - previousDistanceErrorLeft) / (currentTime - previousTime)));
         double powRight = ((distanceErrorRight * DP) + (DI * (distanceErrorRight * (currentTime - previousTime))) + (DD * (distanceErrorRight - previousDistanceErrorRight) / (currentTime - previousTime)));
 
-         rightBack.setPower(powRight);
-         rightFront.setPower(powRight);
-         leftBack.setPower(powLeft);
-         leftFront.setPower(powLeft);
+        rightBack.setPower(powRight);
+        rightFront.setPower(powRight);
+        leftBack.setPower(powLeft);
+        leftFront.setPower(powLeft);
 
-         previousDistanceErrorLeft = distanceErrorLeft;
-         previousDistanceErrorRight = distanceErrorRight;
+        previousDistanceErrorLeft = distanceErrorLeft;
+        previousDistanceErrorRight = distanceErrorRight;
     }
 
     private void arm () {
@@ -456,17 +553,16 @@ public class autonTest extends OpMode {
 
         slidePow = ((lengthError * SP) + (SI * (lengthError * (currentTime - previousTime))) + (SD * (lengthError - previousLengthError) / (currentTime - previousTime)));
 
-        if(slidePow < -0.6) slidePow = -0.6;
+        if(slidePow < -0.4) slidePow = -0.4;
         if(slidePow > 0.6) slidePow = 0.6;
 
-        armLeft.setPower(slidePow);
-        armRight.setPower(slidePow);
+        armSlide.setPower(slidePow);
 
         previousLengthError = lengthError;
     }
 
     private void stepW(double buffer, double errorValue){
-        if (errorValue > buffer && wTimer.milliseconds() > 250){
+        if (Math.abs(errorValue) < buffer && wTimer.milliseconds() > 50){
             stepW++;
         } else {
             wTimer.reset();
@@ -474,7 +570,7 @@ public class autonTest extends OpMode {
     }
 
     private void stepA(double buffer, double errorValue){
-        if (errorValue > buffer && aTimer.milliseconds() > 250){
+        if (Math.abs(errorValue) < buffer && aTimer.milliseconds() > 50){
             stepA++;
         } else {
             aTimer.reset();

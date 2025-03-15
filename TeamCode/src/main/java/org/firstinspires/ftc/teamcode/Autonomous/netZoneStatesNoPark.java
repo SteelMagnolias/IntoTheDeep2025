@@ -10,8 +10,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
-@Autonomous(name = "netZoneStates", group = "Iterative OpMode")
-public class netZoneStates extends OpMode {
+@Autonomous(name = "netZoneStatesNoPark", group = "Iterative OpMode")
+public class netZoneStatesNoPark extends OpMode {
 
     // motors & servos
     private DcMotor leftFront;
@@ -278,28 +278,16 @@ public class netZoneStates extends OpMode {
                 }
                 break;
 
-            case 9: // wait for arm stuff
-                if(PIDTimer.milliseconds() > 27500){
-                    stepW++;
-                }
-                break;
-
-            case 10: // turn
-                driveBackwards(pow);
-                if(pose[0] < -175){
-                    drive(0,0,0,0);
-                    stepW++;
-                }
-                break;
-
             default:
 
                 drive(0, 0, 0, 0);
 
                 break;
         }
+        if(stepA < 3 || stepA > 4) {
+            arm();
+        }
 
-        arm();
         if (stepA < 5) {
             slide();
         }
@@ -311,12 +299,17 @@ public class netZoneStates extends OpMode {
                 break;
 
             case 2: // put wrist in place
-                    desLength = -5000;
+                desLength = -5000;
                 break;
 
             case 3: //drop block
-                desArmPos = 3500;
-                stepA(bufferA, armError);
+                armLeft.setPower(-0.5);
+                armRight.setPower(-0.5);
+                if(armEncoder.getCurrentPosition() < -3500){
+                    stepA++;
+                    armLeft.setPower(0);
+                    armRight.setPower(0);
+                }
                 break;
 
             case 4: //lower arm on block
@@ -324,14 +317,15 @@ public class netZoneStates extends OpMode {
                 if(wTimer.milliseconds() > 2500){
                     intake.setPower(0);
                     stepA++;
+                    aTimer.reset();
                 }
                 break;
 
             case 5: // grab block
                 armSlide.setPower(-0.3);
-                if(slideEncoder.getCurrentPosition() > -50){
+                if(slideEncoder.getCurrentPosition() > -150 || aTimer.milliseconds() > 2500){
                     stepA++;
-                    armSlide.setPower(-0.1);
+                    armSlide.setPower(-0.15);
                 }
                 break;
 
