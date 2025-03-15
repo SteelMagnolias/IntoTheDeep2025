@@ -49,7 +49,7 @@ public class netZoneStates extends OpMode {
     double previousTime = 0;
 
     int stepW = 1;
-    int stepA = 0;
+    int stepA = 1;
     int stepR = 1;
 
     double pow = 0.4;
@@ -212,7 +212,7 @@ public class netZoneStates extends OpMode {
         targetBlueLeft = colorLeft.blue() + 400;
         targetRedLeft = colorLeft.red() + 400;
 
-        intake.setPower(0.2);
+        intake.setPower(0.15);
 
         telemetry.addLine("ready");
     }
@@ -244,6 +244,7 @@ public class netZoneStates extends OpMode {
 
             case 3: // turn to 45 deg
                 turn();
+                stepA(bufferOT, angleError);
                 stepW(bufferOT, angleError);
                 break;
 
@@ -252,39 +253,43 @@ public class netZoneStates extends OpMode {
                 break;
 
             case 5: // turn
-
+                desAngle = 0;
+                stepW++;
                 break;
 
             case 6: // strafe to line up with block
-
+                turn();
+                stepW(bufferOT, angleError);
                 break;
 
             case 7: // arm stuff
-
+                driveBackwards(pow);
+                if(pose[0] < 0){
+                    drive (0,0,0,0);
+                    stepW++;
+                }
                 break;
 
             case 8: // strafe back to priot position
-
+                strafeLeft(pow);
+                if(pose [1] < 3){
+                    drive(0,0,0,0);
+                    stepW++;
+                }
                 break;
 
             case 9: // wait for arm stuff
-
+                if(PIDTimer.milliseconds() > 27500){
+                    stepW++;
+                }
                 break;
 
             case 10: // turn
-
-                break;
-
-            case 11: // strafe to wall
-
-                break;
-
-            case 12: //wait for like 3 secs left
-
-                break;
-
-            case 13: //drive to observation zone to park
-
+                driveBackwards(pow);
+                if(pose[0] < -175){
+                    drive(0,0,0,0);
+                    stepW++;
+                }
                 break;
 
             default:
@@ -295,53 +300,45 @@ public class netZoneStates extends OpMode {
         }
 
         arm();
-        slide();
+        if (stepA < 5) {
+            slide();
+        }
 
         switch (stepA) {
             case 1: //lift arm
-                desArmPos = 3500;
-                if(armPos > 2500){
-                    stepA++;
-                }
+                desArmPos = 2250;
+                stepA(bufferA, armError);
                 break;
 
             case 2: // put wrist in place
                     desLength = -5000;
-                    if(lengthError < 2500){
-                        stepA++;
-                    }
                 break;
 
             case 3: //drop block
-                intake.setPower(-1);
-                if(wTimer.milliseconds() > 2500){
-                    intake.setPower(0);
-                    stepW++;
-                }
+                desArmPos = 3500;
+                stepA(bufferA, armError);
                 break;
 
             case 4: //lower arm on block
-
+                intake.setPower(-1);
+                if(wTimer.milliseconds() > 2500){
+                    intake.setPower(0);
+                    stepA++;
+                }
                 break;
 
             case 5: // grab block
-
+                armSlide.setPower(-0.3);
+                if(slideEncoder.getCurrentPosition() > -50){
+                    stepA++;
+                    armSlide.setPower(-0.1);
+                }
                 break;
 
             case 6: //lift arm
-
-                break;
-
-            case 7: //drop block
-
-                break;
-
-            case 8: // retract wrist
-
-                break;
-
-            case 9: // lower arm
-
+                desArmPos = 0;
+                stepW(bufferA, armError);
+                stepA(bufferA, armError);
                 break;
 
             default:
@@ -547,7 +544,7 @@ public class netZoneStates extends OpMode {
 
         slidePow = ((lengthError * SP) + (SI * (lengthError * (currentTime - previousTime))) + (SD * (lengthError - previousLengthError) / (currentTime - previousTime)));
 
-        if(slidePow < -0.6) slidePow = -0.6;
+        if(slidePow < -0.4) slidePow = -0.4;
         if(slidePow > 0.6) slidePow = 0.6;
 
         armSlide.setPower(slidePow);
@@ -558,14 +555,13 @@ public class netZoneStates extends OpMode {
     private void stepW(double buffer, double errorValue){
         if (Math.abs(errorValue) < buffer && wTimer.milliseconds() > 50){
             stepW++;
-            stepA++;
         } else {
             wTimer.reset();
         }
     }
 
     private void stepA(double buffer, double errorValue){
-        if (Math.abs(errorValue) < buffer && aTimer.milliseconds() > 100){
+        if (Math.abs(errorValue) < buffer && aTimer.milliseconds() > 50){
             stepA++;
         } else {
             aTimer.reset();
